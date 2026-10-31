@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
-      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
       - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
       - name: Install completion test shells
         run: sudo apt-get update && sudo apt-get install --no-install-recommends --yes fish zsh; command -v pwsh python3
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - name: Install tools from mise.toml
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
       - run: bun install --frozen-lockfile --ignore-scripts
       - name: Discover stable server and CLI releases
         id: matrix
@@ -75,7 +75,7 @@ jobs:
             with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
           - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
           - uses: kjanat/envctl@8a59ce4d65c5ffaa41ae326ba0d8a1fe8cde95b1 # master
-      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
       - name: Install independent reference CLI
         run: run bunx npm@12 install --prefix "${RUNNER_TEMP}/reference-cli" --no-audit --no-fund --ignore-scripts --min-release-age-exclude '@bitwarden/cli'
           "@bitwarden/cli@${REFERENCE_VERSION}"
@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - parallel:
-          - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+          - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
           - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
           - uses: kjanat/envctl@8a59ce4d65c5ffaa41ae326ba0d8a1fe8cde95b1 # master
             continue-on-error: true
