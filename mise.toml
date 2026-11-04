@@ -1,6 +1,7 @@
 [tools]
 bun = "latest"
 crane = "latest"
+"github:axllent/mailpit" = "1.33.0"
 node = "26"
 rust = { version = "1.99.1", profile = "minimal", targets = ["wasm32-wasip2", "wasm32-unknown-unknown"] }
 "github:wasm-bindgen/wasm-bindgen" = "0.2.130"

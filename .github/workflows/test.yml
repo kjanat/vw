@@ -85,17 +85,19 @@ jobs:
         run: bun run repo compat run
 
   protocol:
-    name: Vaultwarden ${{ matrix.server }} / protocol, email and SSO
+    name: Vaultwarden ${{ matrix.target.server }} / ${{ matrix.suite }}
     needs: planner
     runs-on: ubuntu-26.04
     timeout-minutes: 40
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.planner.outputs.servers) }}
+      matrix:
+        target: ${{ fromJSON(needs.planner.outputs.servers).include }}
+        suite: [protocol, email, sso]
     env:
-      MISE_NODE_VERSION: ${{ matrix.node }}
-      SERVER_VERSION: ${{ matrix.server }}
-      SERVER_IMAGE: ${{ matrix.image }}
+      MISE_NODE_VERSION: ${{ matrix.target.node }}
+      SERVER_VERSION: ${{ matrix.target.server }}
+      SERVER_IMAGE: ${{ matrix.target.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
@@ -103,14 +105,16 @@ jobs:
           - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
           - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
           - uses: kjanat/envctl@8a59ce4d65c5ffaa41ae326ba0d8a1fe8cde95b1 # master
-            continue-on-error: true
       - run: runner install --no-tools --frozen
       - name: Exercise both KDFs without a reference CLI
+        if: matrix.suite == 'protocol'
         env: { COMPATIBILITY_PROTOCOL_ONLY: "true" }
         run: &compat bun run repo compat run
       - name: Verify delivered email codes under both KDFs
+        if: matrix.suite == 'email'
         env: { COMPATIBILITY_SMTP: "true", COMPATIBILITY_CASE: "email two-factor" }
         run: *compat
       - name: Verify OIDC SSO under both KDFs
+        if: matrix.suite == 'sso'
         env: { COMPATIBILITY_SSO: "true" }
         run: *compat

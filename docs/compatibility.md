@@ -370,19 +370,22 @@ captured-message count unchanged. CLI diagnostics omit passwords and codes.
 Run this dedicated suite with:
 
 ```sh
-VW_TEST_SMTP=1 bun run test:compat
-VW_TEST_VERSION=1.36.0 VW_TEST_SMTP=1 bun run test:compat
+bun run repo compat run --smtp
+bun run repo compat run --server-version 1.36.0 --smtp
 ```
 
-SMTP mode requires no reference CLI. It starts a pinned Mailpit image from the
-target configuration on a dedicated Docker network, publishes its API only on
-loopback, and configures Vaultwarden to send to that capture-only receiver with
-no relay. The test mailbox and server have no mounted persistent storage. Both
-containers and their network are removed afterward. `VW_TEST_SMTP` is forwarded
-by Turbo; direct fixture runs can instead provide `VW_TEST_SERVER` and
-`VW_TEST_MAILPIT`, both disposable HTTP loopback URLs. The normal runner leaves
-SMTP disabled and uses its existing fixtures. CI adds the SMTP suite to each
-server/Node matrix cell. These email tests use library and compiled CLI login;
+SMTP mode requires Linux and no reference CLI. `mise install github:axllent/mailpit`
+installs the standalone executable from GitHub Releases. The runner spawns Mailpit
+in the foreground, waits for its HTTP health check and SMTP greeting, and stops it
+on completion, failure or cancellation. Both listeners bind to independent
+loopback ports. Its default database is temporary; no relay or persistent service
+is configured. Vaultwarden uses Docker host networking to reach the host-side
+SMTP listener. No Mailpit Docker image or dedicated Docker network is needed.
+
+Direct test runs can provide `VW_TEST_SERVER` and `VW_TEST_MAILPIT`, both
+disposable HTTP loopback URLs. The normal runner leaves SMTP disabled. CI gives
+protocol, email and SSO separate matrix results for every server, so failures in
+one suite do not skip another. The email tests use library and compiled CLI login;
 they do not compare against the reference client or test interactive terminal
 entry. Normal tests skip them unless the mailbox is explicitly provided.
 The dedicated mode passed on both pinned servers under Node 26.11.1 on
@@ -392,20 +395,17 @@ after completion.
 Existing-account SSO has a separate capture-only OIDC fixture. Run it with:
 
 ```sh
-VW_TEST_SSO=1 bun run test:compat
-VW_TEST_SSO=1 VW_TEST_SMTP=1 bun run test:compat
-VW_TEST_VERSION=1.36.0 VW_TEST_SSO=1 bun run test:compat
+bun run repo compat run --sso
+bun run repo compat run --server-version 1.36.0 --sso
 ```
 
 SSO mode requires Linux. Its synthetic OIDC provider and Vaultwarden bind to
 loopback; the server uses Docker host networking so it can reach the temporary
-provider. When SMTP mode is also enabled, Vaultwarden connects to Mailpit through
-a loopback-published SMTP port. Mailpit captures messages and has no relay. No
-reference CLI is required. The fixture uses ephemeral RSA signing keys, OIDC
+provider. No reference CLI is required. The fixture uses ephemeral RSA signing keys, OIDC
 discovery/JWKS, authorization codes, and refresh tokens. It exercises real
 Vaultwarden OIDC redirects and PKCE, rather than replacing the server token
-endpoint with a stub. The runner stops the provider and removes the server,
-Mailpit, network, and CLI profiles after the tests.
+endpoint with a stub. The runner stops the provider and removes the server
+and CLI profiles after the tests.
 
 Both KDF cases verify library authorization and refresh, exact vault-key recovery,
 compiled Node `login --sso` through the localhost callback, encrypted item reads,
