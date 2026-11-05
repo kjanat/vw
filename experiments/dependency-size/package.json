@@ -11,7 +11,7 @@
 		"@bytecodealliance/jco": "1.40.0",
 		"esbuild": "0.28.2",
 		"htmlparser2": "12.0.0",
-		"parse5": "8.0.1",
+		"parse5": "8.1.0",
 		"parse5-sax-parser": "8.0.0",
 		"tldts": "7.4.19",
 		"tldts-core": "7.4.20",
