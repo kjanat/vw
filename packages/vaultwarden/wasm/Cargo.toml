@@ -2,8 +2,8 @@
 name = "vw-password-strength"
 version = "0.1.0"
 edition = "2024"
-publish = false
 license = "PolyForm-Noncommercial-1.0.0"
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
@@ -17,7 +17,7 @@ zxcvbn = { path = "vendor/zxcvbn" }
 
 [profile.release]
 opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
 strip = true
+lto = true
+panic = "abort"
+codegen-units = 1

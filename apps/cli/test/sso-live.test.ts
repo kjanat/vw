@@ -270,12 +270,17 @@ for (const kdf of [{ type: 0, iterations: 600000 }, { type: 1, iterations: 3, me
 				masterPasswordHash: hash,
 			});
 			const secret = text(field(object(setup.authenticator ?? setup), 'key'));
+			const enrollmentTime = Date.now();
 			await client.api(renewed.accessToken, 'PUT', '/two-factor/authenticator', {
 				key: secret,
-				token: totp(secret, Date.now() - 30000),
+				token: totp(secret, enrollmentTime),
 				userVerificationToken: setup.userVerificationToken,
 				masterPasswordHash: hash,
 			});
+			// Enrollment consumes this counter. Wait for a fresh code instead of enrolling
+			// with the previous interval, which can expire while the request is in flight.
+			const nextInterval = (Math.floor(enrollmentTime / 30000) + 1) * 30000;
+			while (Date.now() < nextInterval) await Bun.sleep(Math.max(1, nextInterval - Date.now()));
 			const challenged = await createSsoAuthorization(client, 'http://localhost:8065');
 			let callbacks = 0;
 			const twoFactor = await loginWithSso(

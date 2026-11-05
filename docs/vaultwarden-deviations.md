@@ -418,6 +418,13 @@ the connected version instead of rejecting all empty collection lists.
 - **1.37.4 and newer:** require a confirmed membership with the locally resolved
   full-access grant before collectionless create, move, or import.
 
+**1.37.5 and newer also require a nonempty collection list for moves**, including
+owner/admin moves. An empty list reaches the server and returns HTTP 400; the
+personal item remains intact and can be retried with an existing collection.
+This additional restriction applies to the single-cipher share endpoint used by
+`move` and its deprecated `share` alias. See the
+[upstream change](https://github.com/dani-garcia/vaultwarden/commit/64ae55ceb2e33aa08e7291d50ca010c679064842).
+
 For bulk imports this also prevents a success response after Vaultwarden has
 silently skipped collectionless ciphers the member cannot import.
 Other servers still require a collection for collectionless create/move; the

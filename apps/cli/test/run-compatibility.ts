@@ -4,7 +4,7 @@ import { appendFile, mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join } from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { createServer } from 'node:net';
+import { loopbackPorts, startMailpit } from '#test/fixtures/mailpit';
 import { assertStableVersion, resolveCompatibilityTarget, type CompatibilityTargets } from '#test/compatibility-plan';
 import { runDirect } from '../../../tools/runtime.mjs';
 
@@ -29,11 +29,10 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 	const {
 		servers: compatibilityTargets,
 		referenceIncompatibilities,
-		mailpitImage,
 	} = await Bun
 		.file(
 			new URL('./fixtures/compatibility-targets.json', import.meta.url),
-		).json() as CompatibilityTargets & { mailpitImage: string };
+		).json() as CompatibilityTargets;
 
 	const version = options.version ?? '1.37.4';
 	if (process.platform === 'win32') throw new Error('The managed compatibility runner requires POSIX process groups.');
@@ -44,13 +43,10 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 	const protocolOnly = options.protocolOnly ?? false;
 	const smtpEnabled = options.smtp ?? false;
 	const ssoEnabled = options.sso ?? false;
-	if (ssoEnabled && process.platform !== 'linux') {
-		throw new Error('The SSO fixture requires Linux.');
+	if ((ssoEnabled || smtpEnabled) && process.platform !== 'linux') {
+		throw new Error('The SMTP and SSO fixtures require Linux host networking.');
 	}
 	let compareReference = !protocolOnly && !smtpEnabled && !ssoEnabled;
-	if (!/^axllent\/mailpit@sha256:[a-f0-9]{64}$/.test(mailpitImage)) {
-		throw new Error('Mailpit must use a pinned digest.');
-	}
 	if (compareReference && (!reference || !isAbsolute(reference) || !(await stat(reference)).isFile())) {
 		throw new Error(
 			'--reference must name an absolute path to the independent bw executable; use --protocol-only to run without it.',
@@ -62,11 +58,12 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 	}
 	const directory = await mkdtemp(join(tmpdir(), 'vw-compat-run-'));
 	const name = `vw-compat-${randomUUID()}`;
-	const mailName = `${name}-mail`, network = `${name}-network`;
+	let mailpit: Awaited<ReturnType<typeof startMailpit>> | undefined;
+	let mailpitFailed = false;
 	let mailApi: string | undefined;
 	let mailSmtpPort: number | undefined;
 	let oidc: ReturnType<typeof Bun.spawn> | undefined;
-	let oidcUrl: string | undefined, ssoServer: string | undefined;
+	let oidcUrl: string | undefined, hostServer: string | undefined;
 	const oidcControl = randomUUID();
 	let interrupted = false;
 	const cancellation = new AbortController();
@@ -87,6 +84,21 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 	};
 	process.on('SIGINT', interrupt);
 	process.on('SIGTERM', interrupt);
+
+	async function redact(output: string): Promise<string> {
+		const safe = Bun.spawn(['envctl', 'redact'], {
+			stdin: Buffer.from(output),
+			stdout: 'pipe',
+			stderr: 'pipe',
+		});
+		const [code, stdout] = await Promise.all([
+			safe.exited,
+			new Response(safe.stdout).text(),
+			new Response(safe.stderr).text(),
+		]);
+		if (code !== 0) throw new Error(`envctl redaction failed (exit ${code}); Mailpit output was withheld.`);
+		return stdout;
+	}
 
 	/** Docker output reaches the caller only after envctl; neither raw stream is displayed or saved. */
 	async function docker(args: string[]): Promise<{ code: number; output: string }> {
@@ -164,37 +176,17 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 				: 'Protocol-only suite: CLI against Vaultwarden; independent bw comparison disabled.',
 		);
 		if (smtpEnabled) {
-			const created = await docker(['network', 'create', network]);
-			if (created.code !== 0) throw new Error(`Could not create isolated SMTP network: ${created.output}`);
-			const mail = await docker([
-				'run',
-				'-d',
-				'--name',
-				mailName,
-				'--network',
-				network,
-				'--network-alias',
-				'mail',
-				'-p',
-				'127.0.0.1::8025',
-				'-p',
-				'127.0.0.1::1025',
-				mailpitImage,
-			]);
-			if (mail.code !== 0) throw new Error(`Could not start SMTP receiver: ${mail.output}`);
-			const port = await docker(['port', mailName, '8025/tcp']);
-			if (port.code !== 0 || !/^127\.0\.0\.1:\d+$/.test(port.output.trim())) {
-				throw new Error('Could not discover Mailpit loopback port.');
-			}
-			mailApi = `http://${port.output.trim()}`;
-			if (ssoEnabled) {
-				const smtp = await docker(['port', mailName, '1025/tcp']);
-				const address = smtp.output.trim();
-				const match = /^127\.0\.0\.1:(\d+)$/.exec(address);
-				if (smtp.code !== 0 || !match) throw new Error('Could not discover Mailpit SMTP loopback port.');
-				mailSmtpPort = Number(match[1]);
-			}
-			console.log(`SMTP receiver: ${mailName}; capture-only, with no relay configured.`);
+			mailpit = await startMailpit({ signal: cancellation.signal, redact });
+			mailApi = mailpit.apiUrl;
+			mailSmtpPort = mailpit.smtpPort;
+			const fixture = mailpit;
+			void fixture.exited.then(() => {
+				if (!fixture.stopping && !interrupted) {
+					mailpitFailed = true;
+					stopTests();
+				}
+			});
+			console.log(`SMTP receiver: Mailpit pid ${mailpit.pid}; capture-only on loopback.`);
 		}
 		if (ssoEnabled) {
 			oidc = Bun.spawn(['bun', new URL('./fixtures/oidc-provider.ts', import.meta.url).pathname], {
@@ -207,38 +199,40 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			oidcUrl = new TextDecoder().decode(first.value).trim();
 			reader.releaseLock();
 			if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(oidcUrl)) throw new Error('OIDC fixture did not start.');
-			const reservation = createServer();
-			await new Promise<void>(resolve => reservation.listen(0, '127.0.0.1', resolve));
-			const address = reservation.address();
-			if (!address || typeof address === 'string') throw new Error('Could not reserve SSO server port.');
-			ssoServer = `http://127.0.0.1:${address.port}`;
-			await new Promise<void>(resolve => reservation.close(() => resolve()));
+		}
+		if (ssoEnabled || smtpEnabled) {
+			const [port] = await loopbackPorts(1);
+			hostServer = `http://127.0.0.1:${port}`;
 		}
 		const started = await docker([
 			'run',
 			'-d',
 			'--name',
 			name,
-			...(ssoEnabled
+			...(hostServer
 				? [
 					'--network',
 					'host',
 					'-e',
 					'ROCKET_ADDRESS=127.0.0.1',
 					'-e',
-					`ROCKET_PORT=${new URL(ssoServer!).port}`,
+					`ROCKET_PORT=${new URL(hostServer).port}`,
 					'-e',
-					`DOMAIN=${ssoServer}`,
-					'-e',
-					'SSO_ENABLED=true',
-					'-e',
-					'SSO_ONLY=true',
-					'-e',
-					'SSO_CLIENT_ID=fixture-client',
-					'-e',
-					'SSO_CLIENT_SECRET=synthetic-oidc-secret',
-					'-e',
-					`SSO_AUTHORITY=${oidcUrl}`,
+					`DOMAIN=${hostServer}`,
+					...(ssoEnabled
+						? [
+							'-e',
+							'SSO_ENABLED=true',
+							'-e',
+							'SSO_ONLY=true',
+							'-e',
+							'SSO_CLIENT_ID=fixture-client',
+							'-e',
+							'SSO_CLIENT_SECRET=synthetic-oidc-secret',
+							'-e',
+							`SSO_AUTHORITY=${oidcUrl}`,
+						]
+						: []),
 				]
 				: ['-p', '127.0.0.1::80']),
 			'-e',
@@ -253,11 +247,10 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			'UNAUTHENTICATED_RATELIMIT_MAX_BURST=10000',
 			...(smtpEnabled
 				? [
-					...(!ssoEnabled ? ['--network', network] : []),
 					'-e',
-					`SMTP_HOST=${ssoEnabled ? '127.0.0.1' : 'mail'}`,
+					'SMTP_HOST=127.0.0.1',
 					'-e',
-					`SMTP_PORT=${ssoEnabled ? mailSmtpPort : 1025}`,
+					`SMTP_PORT=${mailSmtpPort}`,
 					'-e',
 					'SMTP_SECURITY=off',
 					'-e',
@@ -268,7 +261,7 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 		]);
 		if (started.code !== 0) throw new Error(`Could not start fixture server: ${started.output}`);
 		console.log(`Fixture container: ${name}`);
-		let server = ssoServer;
+		let server = hostServer;
 		if (!server) {
 			const port = await docker(['port', name, '80/tcp']);
 			const address = port.output.trim();
@@ -383,6 +376,7 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 						: 'Compatibility KDF and vault checks',
 				);
 			}
+			mailpit?.assertRunning();
 			const args = testArgs(run.files);
 			const childEnv = {
 				...env,
@@ -405,10 +399,13 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			if (!interrupted) {
 				const logs = await docker(['logs', '--tail', '80', name]);
 				console.error(logs.output);
+				if (mailpit) console.error(await mailpit.diagnostics());
 			}
 		};
 		if (shardImportMatrix) {
-			exitCode = await runOne(runs[0]!);
+			// Check authentication and REST setup before the long KDF and import comparisons.
+			exitCode = await runOne(runs.at(-1)!);
+			if (exitCode === 0 && !interrupted) exitCode = await runOne(runs[0]!);
 			if (exitCode === 0 && !interrupted) {
 				let nextShard = 1;
 				let failed = false;
@@ -424,7 +421,6 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 					}
 				});
 				await Promise.all(workers);
-				if (!failed && !interrupted) exitCode = await runOne(runs.at(-1)!);
 			}
 			if (exitCode !== 0) await reportFailure();
 		} else {
@@ -438,6 +434,7 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 		}
 	} finally {
 		stopTests();
+		await mailpit?.stop();
 		if (oidc) {
 			oidc.kill('SIGTERM');
 			await oidc.exited;
@@ -447,20 +444,11 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			exitCode = 1;
 			console.error(`Fixture cleanup failed: ${removed.output}`);
 		} else console.log(`Removed fixture container: ${name}`);
-		if (smtpEnabled) {
-			for (const args of [['rm', '-f', mailName], ['network', 'rm', network]]) {
-				const result = await docker(args);
-				if (result.code !== 0 && !/No such (container|network)/.test(result.output)) {
-					exitCode = 1;
-					console.error(`SMTP fixture cleanup failed: ${result.output}`);
-				}
-			}
-		}
 		await rm(directory, { recursive: true, force: true });
 		process.off('SIGINT', interrupt);
 		process.off('SIGTERM', interrupt);
 	}
-	return interrupted ? 130 : exitCode ?? 1;
+	return interrupted ? 130 : mailpitFailed ? 1 : exitCode ?? 1;
 }
 
 if (import.meta.main) await runDirect(['compat', 'run'], import.meta.url, { runCompatibility });

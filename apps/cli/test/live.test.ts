@@ -2046,11 +2046,33 @@ for (
 						));
 					}
 					expect((await official(['sync', '--force'], login.stdout.trim())).code).toBe(0);
-					const movedWithoutCollection = JSON.parse(
-						await checked(['move', noCollectionItems[0]!.id, organization.id]),
-					);
-					expect(movedWithoutCollection.organizationId).toBe(organization.id);
-					expect(movedWithoutCollection.collectionIds).toEqual([]);
+					const moveWithoutCollection = await run(['move', noCollectionItems[0]!.id, organization.id], session);
+					// 1.37.5 added a nonempty-collection check to the single-cipher share endpoint.
+					// https://github.com/dani-garcia/vaultwarden/commit/64ae55ceb2e33aa08e7291d50ca010c679064842
+					if (Bun.semver.satisfies(serverVersion, '<1.37.5')) {
+						expect(moveWithoutCollection.code).toBe(0);
+						const movedWithoutCollection = JSON.parse(moveWithoutCollection.stdout);
+						expect(movedWithoutCollection.organizationId).toBe(organization.id);
+						expect(movedWithoutCollection.collectionIds).toEqual([]);
+					} else {
+						expect(moveWithoutCollection.code).toBe(1);
+						expect(moveWithoutCollection.stderr).toContain('Vaultwarden request failed (HTTP 400).');
+						await checked(['sync', '--force']);
+						const unchanged = JSON.parse(await checked(['get', 'item', noCollectionItems[0]!.id]));
+						expect(unchanged.organizationId).toBeUndefined();
+						expect(unchanged.login.password).toBe('move-secret');
+						const movedWithCollection = JSON.parse(
+							await checked([
+								'move',
+								noCollectionItems[0]!.id,
+								organization.id,
+								encode([collections[0].id]),
+							]),
+						);
+						expect(movedWithCollection.organizationId).toBe(organization.id);
+						expect(movedWithCollection.collectionIds).toEqual([collections[0].id]);
+						expect(movedWithCollection.login.password).toBe('move-secret');
+					}
 					const referenceMoveWithoutCollection = await official(
 						['move', noCollectionItems[1]!.id, organization.id],
 						login.stdout.trim(),
