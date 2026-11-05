@@ -403,7 +403,9 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			}
 		};
 		if (shardImportMatrix) {
-			exitCode = await runOne(runs[0]!);
+			// Check authentication and REST setup before the long KDF and import comparisons.
+			exitCode = await runOne(runs.at(-1)!);
+			if (exitCode === 0 && !interrupted) exitCode = await runOne(runs[0]!);
 			if (exitCode === 0 && !interrupted) {
 				let nextShard = 1;
 				let failed = false;
@@ -419,7 +421,6 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 					}
 				});
 				await Promise.all(workers);
-				if (!failed && !interrupted) exitCode = await runOne(runs.at(-1)!);
 			}
 			if (exitCode !== 0) await reportFailure();
 		} else {
