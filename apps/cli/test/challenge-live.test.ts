@@ -303,10 +303,16 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 			if (process.env.VW_TEST_BW) {
 				// Use an independent profile. Remove 2FA only on this disposable account,
 				// so the reference login does not need to replay our already consumed OTP.
+				// 1.37.5 binds the verification token to the authenticator's enabled state.
+				const disable = await client.api(initial.accessToken, 'POST', '/two-factor/get-authenticator', {
+					masterPasswordHash: hash,
+				});
+				expect(text(field(object(disable.authenticator ?? disable), 'key'))).toBe(secret);
 				await client.api(initial.accessToken, 'DELETE', '/two-factor/authenticator', {
 					masterPasswordHash: hash,
 					key: secret,
 					type: 0,
+					userVerificationToken: disable.userVerificationToken,
 				});
 				const ca = join(dir, 'reference-ca.pem'), keyPath = join(dir, 'reference-key.pem');
 				await writeTestCertificate(ca, keyPath);
