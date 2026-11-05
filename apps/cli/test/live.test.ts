@@ -2057,8 +2057,9 @@ for (
 					} else {
 						expect(moveWithoutCollection.code).toBe(1);
 						expect(moveWithoutCollection.stderr).toContain('Vaultwarden request failed (HTTP 400).');
+						await checked(['sync', '--force']);
 						const unchanged = JSON.parse(await checked(['get', 'item', noCollectionItems[0]!.id]));
-						expect(unchanged.organizationId).toBeNull();
+						expect(unchanged.organizationId).toBeUndefined();
 						expect(unchanged.login.password).toBe('move-secret');
 						const movedWithCollection = JSON.parse(
 							await checked([
