@@ -53,7 +53,7 @@
       "devDependencies": {
         "@babel/eslint-parser": "catalog:",
         "@babel/preset-typescript": "catalog:",
-        "@bytecodealliance/jco": "1.40.0",
+        "@bytecodealliance/jco": "1.41.0",
         "@eslint/js": "catalog:",
         "@types/bun": "catalog:",
         "@types/lunr": "catalog:",
@@ -168,7 +168,7 @@
 
     "@bytecodealliance/componentize-js-0-19-3": ["@bytecodealliance/componentize-js@0.19.3", "", { "dependencies": { "@bytecodealliance/jco": "^1.15.1", "@bytecodealliance/wizer": "^10.0.0", "es-module-lexer": "^1.6.0", "oxc-parser": "^0.76.0" }, "bin": { "componentize-js": "src/cli.js" } }, "sha512-ju7Y4WeF0B9uMkSPHJgmT6ouEfSwbe9M1uR/YOnYZjBpxJjH9qzxIkJg/kf8NycVDyFJ2/lscmJ1E1uPiDQVRQ=="],
 
-    "@bytecodealliance/jco": ["@bytecodealliance/jco@1.40.0", "", { "dependencies": { "@bytecodealliance/componentize-js": "^0.23.0", "@bytecodealliance/componentize-js-0-19-3": "npm:@bytecodealliance/componentize-js@^0.19.3", "@bytecodealliance/jco-std": "^0.10.0", "@bytecodealliance/jco-transpile": "^0.21.0", "@bytecodealliance/preview2-shim": "^0.31.0", "binaryen": "^132.0.0", "commander": "^14", "componentize-qjs": "^0.5.0", "mkdirp": "^3", "regexpu-core": "6.4.0", "rolldown": "^1.2.4", "typescript": "7.0.2", "typescript-compiler-api": "npm:typescript@6.0.3", "unenv": "2.0.0-rc.24" }, "bin": { "jco": "dist/jco.js" } }, "sha512-yC3hSK09KL8ER5YwT7DL/RZkJJKR2JuhSNxcWSpWlq7zol79G7hkAvmA172uWAJ02N/3FcetTHgA1doZXFJB3g=="],
+    "@bytecodealliance/jco": ["@bytecodealliance/jco@1.41.0", "", { "dependencies": { "@bytecodealliance/componentize-js": "^0.23.0", "@bytecodealliance/componentize-js-0-19-3": "npm:@bytecodealliance/componentize-js@^0.19.3", "@bytecodealliance/jco-std": "^0.10.0", "@bytecodealliance/jco-transpile": "^0.23.0", "@bytecodealliance/preview2-shim": "^0.31.0", "binaryen": "^132.0.0", "commander": "^14", "componentize-qjs": "^0.5.0", "mkdirp": "^3", "regexpu-core": "6.4.0", "rolldown": "^1.2.4", "typescript": "7.0.2", "typescript-compiler-api": "npm:typescript@6.0.3", "unenv": "2.0.0-rc.24" }, "bin": { "jco": "dist/jco.js" } }, "sha512-hsl9PEj5kOQLMsUhMqaho6yYooQ8SqULjPCuUuUSXu0D3huVQKFwmbUH0B9JTBpLPZPuJJNfnpKnZx6rV53VOA=="],
 
     "@bytecodealliance/jco-node-fs": ["@bytecodealliance/jco-node-fs@0.3.2", "", { "optionalDependencies": { "@bytecodealliance/jco-node-fs-darwin-arm64": "0.3.2", "@bytecodealliance/jco-node-fs-darwin-x64": "0.3.2", "@bytecodealliance/jco-node-fs-linux-arm64-gnu": "0.3.2", "@bytecodealliance/jco-node-fs-linux-arm64-musl": "0.3.2", "@bytecodealliance/jco-node-fs-linux-x64-gnu": "0.3.2", "@bytecodealliance/jco-node-fs-linux-x64-musl": "0.3.2", "@bytecodealliance/jco-node-fs-win32-arm64-msvc": "0.3.2", "@bytecodealliance/jco-node-fs-win32-x64-msvc": "0.3.2" } }, "sha512-yxvqQreNcOQdMsEKZomkSqThtkxrAz3f1Cmy8BsV0UHi9saa2/D1KDB14IAXPYwDq/maS6lCzS+MuMQx6QkUgA=="],
 
@@ -190,11 +190,11 @@
 
     "@bytecodealliance/jco-std": ["@bytecodealliance/jco-std@0.10.0", "", { "dependencies": { "@noble/hashes": "1.8.0", "acorn": "8.17.0", "acorn-walk": "8.3.5", "minimatch": "10.2.6", "punycode": "2.3.1", "readable-stream": "4.7.0", "urlpattern-polyfill": "10.1.0", "web-streams-polyfill": "4.2.0", "whatwg-url": "14.2.0" }, "peerDependencies": { "@bytecodealliance/preview2-shim": "^0.31.0" }, "optionalPeers": ["@bytecodealliance/preview2-shim"] }, "sha512-t0zGjGPmwvqQ6fsBG1Zy+lgChfRRhKXVAMjIKPIn8MPFYNxqSRALOSDOTurOyHemMz5jdH2b8d2FqF0mwOhxLA=="],
 
-    "@bytecodealliance/jco-transpile": ["@bytecodealliance/jco-transpile@0.21.0", "", { "dependencies": { "@bytecodealliance/preview2-shim": "^0.31.0", "@bytecodealliance/preview3-shim": "^0.12.0", "binaryen": "^132.0.0", "oxc-minify": "^0.151.0" } }, "sha512-uzPsODpWcGAfiO5Yt4HSRFTrTJCb0PxMt6joHEb7f7IAqFz8wT5W/O0f0PqPkz+EctLd9PKOGylzCJRPu2B/8w=="],
+    "@bytecodealliance/jco-transpile": ["@bytecodealliance/jco-transpile@0.23.0", "", { "dependencies": { "@bytecodealliance/preview2-shim": "^0.31.0", "@bytecodealliance/preview3-shim": "^0.13.0", "binaryen": "^132.0.0", "oxc-minify": "^0.151.0" } }, "sha512-0Vd3W2EA+OMfcGxScTUClo48cHoviJ44HpcF9P0kkYm8tZMzJhT7LLQPzJPV34ynzghARyOf+jpGr83bbYyLhQ=="],
 
     "@bytecodealliance/preview2-shim": ["@bytecodealliance/preview2-shim@0.31.0", "", { "dependencies": { "@bytecodealliance/jco-node-fs": "0.3.2" } }, "sha512-9Gv4wn/DCz1NOqTZFcPSIko9jsTwmps67QZ6PPytypmmWLSz5AQf3Xn2EjItfudWwSh5d+9EPD3BrNlvqKWNtA=="],
 
-    "@bytecodealliance/preview3-shim": ["@bytecodealliance/preview3-shim@0.12.0", "", { "dependencies": { "@bytecodealliance/jco-node-fs": "0.3.2", "@bytecodealliance/preview2-shim": "^0.31.0" } }, "sha512-qZ7rXS0++63x4O9YVsRhF+qlHdChoD61MGDiBpQWR5edmXxzguXTPttKFbyZSWHwisxBUSXKujBZNIIbU/MnLA=="],
+    "@bytecodealliance/preview3-shim": ["@bytecodealliance/preview3-shim@0.13.0", "", { "dependencies": { "@bytecodealliance/jco-node-fs": "0.3.2", "@bytecodealliance/preview2-shim": "^0.31.0" } }, "sha512-XcpvwlsjlVqzV1NeHItgdWCQMPq/imPSoCsB/6vh1eLnB/GjsbApEHXPoAH5h7mdkug2RPlmA+DWI5PEtg8cBg=="],
 
     "@bytecodealliance/weval": ["@bytecodealliance/weval@0.5.1", "", { "dependencies": { "@napi-rs/lzma": "^1.1.2", "fflate": "^0.8.3", "tar": "^7.5.19" } }, "sha512-Hb8qRoF3b2UgkZqeDTzaTKGITa31KCLcoyfFstE/uO/aYVUyHweaNDchF4SNrPQfEpiBwRnMUilI4Jbbl8Hl6w=="],
 
