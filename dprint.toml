@@ -77,4 +77,3 @@ svelteDirectiveShorthand = true
 ignoreCommentDirective = "dprint-ignore"
 ignoreFileCommentDirective = "dprint-ignore-file"
 associations = ["!**/*.svg"]
-

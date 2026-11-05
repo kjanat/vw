@@ -93,7 +93,14 @@ export async function startMailpit(options: MailpitOptions) {
 		get stopping() {
 			return stopping;
 		},
-		diagnostics: () => options.redact(output),
+		async diagnostics(): Promise<string> {
+			try {
+				return await options.redact(output);
+			} catch {
+				// Redactor errors can contain raw input too. Never print them or replace the primary failure.
+				return 'Mailpit diagnostics unavailable: redaction failed; output withheld.';
+			}
+		},
 		assertRunning() {
 			if (child.exitCode !== null || child.signalCode !== null) {
 				throw new Error(`Mailpit exited unexpectedly (exit ${child.exitCode}, signal ${child.signalCode}).`);

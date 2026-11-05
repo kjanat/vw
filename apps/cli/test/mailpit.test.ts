@@ -18,9 +18,10 @@ async function fakeMailpit(
 	await Bun.write(
 		script,
 		`
+		${mode === 'exit' ? '' : "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"}
 		await Bun.write(${JSON.stringify(pidFile)}, String(process.pid));
 		console.error('fixture diagnostic: synthetic-secret');
-		${mode === 'exit' ? 'process.exit(17);' : "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"}
+		${mode === 'exit' ? 'process.exit(17);' : ''}
 		${
 			mode === 'ready'
 				? `
@@ -69,7 +70,47 @@ test('Mailpit startup errors include the exit status and redacted diagnostics', 
 
 test('Mailpit readiness times out and forcibly stops an unresponsive process', async () => {
 	await fakeMailpit('hang', async (options, pid) => {
-		await expect(startMailpit({ ...options, startupTimeoutMs: 300 })).rejects.toThrow('Mailpit startup failed');
+		await expect(startMailpit({ ...options, startupTimeoutMs: 2000 })).rejects.toThrow('Mailpit startup failed');
+		expectStopped(await pid());
+	});
+});
+
+test('failed redaction does not replace the startup error or expose diagnostics', async () => {
+	await fakeMailpit('exit', async (options, pid) => {
+		let failure: unknown;
+		try {
+			await startMailpit({
+				...options,
+				redact: async () => {
+					throw new Error('synthetic-secret');
+				},
+			});
+		} catch (error) {
+			failure = error;
+		}
+		expect(failure).toBeInstanceOf(Error);
+		expect(String(failure)).toContain('exit 17');
+		expect(String(failure)).toContain('diagnostics unavailable');
+		expect(String(failure)).not.toContain('synthetic-secret');
+		expect(String((failure as Error).cause)).toContain('exit 17');
+		expectStopped(await pid());
+	});
+});
+
+test('failed redaction after startup leaves compatibility failure reporting usable', async () => {
+	await fakeMailpit('ready', async (options, pid) => {
+		const fixture = await startMailpit({
+			...options,
+			redact: async () => {
+				throw new Error('synthetic-secret');
+			},
+		});
+		try {
+			expect(await fixture.diagnostics()).toBe('Mailpit diagnostics unavailable: redaction failed; output withheld.');
+			fixture.assertRunning();
+		} finally {
+			await fixture.stop();
+		}
 		expectStopped(await pid());
 	});
 });

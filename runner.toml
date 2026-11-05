@@ -1,4 +1,4 @@
 #:schema https://kjanat.github.io/runner/schemas/runner.toml.schema.json
 
 [env]
-TURBO_TELEMETRY_DISABLED = '1'
+TURBO_TELEMETRY_DISABLED = "1"
