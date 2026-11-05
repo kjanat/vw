@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
-      - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
+      - uses: kjanat/runner@30f5787ff1f4947a419c6b67663fd26259007dc8 # master
       - name: Install completion test shells
         run: sudo apt-get update && sudo apt-get install --no-install-recommends --yes fish zsh; command -v pwsh python3
       - run: runner i --no-tools -fs typecheck lint test
@@ -73,7 +73,7 @@ jobs:
       - parallel:
           - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
             with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
-          - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
+          - uses: kjanat/runner@30f5787ff1f4947a419c6b67663fd26259007dc8 # master
           - uses: kjanat/envctl@8a59ce4d65c5ffaa41ae326ba0d8a1fe8cde95b1 # master
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
       - name: Install independent reference CLI
@@ -103,7 +103,7 @@ jobs:
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - parallel:
           - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
-          - uses: kjanat/runner@b32ea932a1813ae0be44e755c16df9f9f5ca86a4 # master
+          - uses: kjanat/runner@30f5787ff1f4947a419c6b67663fd26259007dc8 # master
           - uses: kjanat/envctl@8a59ce4d65c5ffaa41ae326ba0d8a1fe8cde95b1 # master
       - run: runner install --no-tools --frozen
       - name: Exercise both KDFs without a reference CLI
