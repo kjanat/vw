@@ -10,6 +10,6 @@
 		"test:sdk": "bun ../../tools/repo.ts experiment wasip2 verify-sdk"
 	},
 	"devDependencies": {
-		"@bytecodealliance/jco": "1.40.0"
+		"@bytecodealliance/jco": "1.41.0"
 	}
 }
