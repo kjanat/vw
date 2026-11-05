@@ -2065,11 +2065,11 @@ for (
 								'move',
 								noCollectionItems[0]!.id,
 								organization.id,
-								encode([collection.id]),
+								encode([collections[0].id]),
 							]),
 						);
 						expect(movedWithCollection.organizationId).toBe(organization.id);
-						expect(movedWithCollection.collectionIds).toEqual([collection.id]);
+						expect(movedWithCollection.collectionIds).toEqual([collections[0].id]);
 						expect(movedWithCollection.login.password).toBe('move-secret');
 					}
 					const referenceMoveWithoutCollection = await official(
