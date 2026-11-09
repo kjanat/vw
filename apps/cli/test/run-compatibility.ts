@@ -6,6 +6,7 @@ import { isAbsolute, join } from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { loopbackPorts, startMailpit } from '#test/fixtures/mailpit';
 import { assertStableVersion, resolveCompatibilityTarget, type CompatibilityTargets } from '#test/compatibility-plan';
+import { cleanupAll, cleanupDiagnostic, readOidcUrl, terminate } from '#test/fixtures/lifecycle';
 import { runDirect } from '../../../tools/runtime.mjs';
 
 export interface CompatibilityOptions {
@@ -68,12 +69,30 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 	let interrupted = false;
 	const cancellation = new AbortController();
 	const running = new Set<ChildProcess>();
+	const stopping = new Map<ChildProcess, Promise<void>>();
 	const stopTests = () => {
 		for (const child of running) {
-			if (child.pid) {
-				try {
-					process.kill(-child.pid, 'SIGTERM');
-				} catch { /* The owned process group has already exited. */ }
+			if (child.pid && !stopping.has(child)) {
+				const pid = child.pid;
+				const exited = new Promise<void>(resolve => {
+					if (child.exitCode !== null || child.signalCode !== null) resolve();
+					else child.once('exit', () => resolve());
+				});
+				const shutdown = terminate(
+					exited,
+					signal => {
+						try {
+							process.kill(-pid, signal);
+						} catch (error) {
+							if (!(error instanceof Error && 'code' in error && error.code === 'ESRCH')) throw error;
+						}
+					},
+					undefined,
+					true,
+				);
+				stopping.set(child, shutdown);
+				// Signal handlers cannot await; cleanup collects and reports failures.
+				void shutdown.catch(() => {});
 			}
 		}
 	};
@@ -134,6 +153,7 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 		return { code, output: redacted };
 	}
 	let exitCode: number | undefined;
+	let cleanupFailed: boolean;
 	try {
 		if (compareReference) {
 			const referenceVersion = Bun.spawn([reference!, '--version'], {
@@ -189,16 +209,13 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			console.log(`SMTP receiver: Mailpit pid ${mailpit.pid}; capture-only on loopback.`);
 		}
 		if (ssoEnabled) {
-			oidc = Bun.spawn(['bun', new URL('./fixtures/oidc-provider.ts', import.meta.url).pathname], {
+			const fixture = Bun.spawn(['bun', new URL('./fixtures/oidc-provider.ts', import.meta.url).pathname], {
 				env: { PATH: process.env.PATH, VW_OIDC_CONTROL: oidcControl },
 				stdout: 'pipe',
-				stderr: 'inherit',
+				stderr: 'ignore',
 			});
-			const reader = (oidc.stdout as ReadableStream<Uint8Array>).getReader();
-			const first = await reader.read();
-			oidcUrl = new TextDecoder().decode(first.value).trim();
-			reader.releaseLock();
-			if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(oidcUrl)) throw new Error('OIDC fixture did not start.');
+			oidc = fixture;
+			oidcUrl = await readOidcUrl(fixture, cancellation.signal);
 		}
 		if (ssoEnabled || smtpEnabled) {
 			const [port] = await loopbackPorts(1);
@@ -376,6 +393,7 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 						: 'Compatibility KDF and vault checks',
 				);
 			}
+			cancellation.signal.throwIfAborted();
 			mailpit?.assertRunning();
 			const args = testArgs(run.files);
 			const childEnv = {
@@ -433,22 +451,39 @@ export async function runCompatibility(options: CompatibilityOptions = {}) {
 			}
 		}
 	} finally {
-		stopTests();
-		await mailpit?.stop();
-		if (oidc) {
-			oidc.kill('SIGTERM');
-			await oidc.exited;
+		const failures = await cleanupAll({
+			tests: async () => {
+				stopTests();
+				const results = await Promise.allSettled(stopping.values());
+				const errors = results.filter(result => result.status === 'rejected');
+				if (errors.length) throw new AggregateError(errors.map(result => result.reason));
+			},
+			Mailpit: () => mailpit?.stop(),
+			OIDC: async () => {
+				if (oidc) await terminate(oidc.exited, signal => oidc!.kill(signal));
+			},
+			Docker: async () => {
+				const removed = await docker(['rm', '-f', name]);
+				if (removed.code !== 0 && !removed.output.includes('No such container')) {
+					throw new Error(removed.output);
+				}
+				console.log(`Removed fixture container: ${name}`);
+			},
+			directory: () => rm(directory, { recursive: true, force: true }),
+			listeners: () => {
+				process.off('SIGINT', interrupt);
+				process.off('SIGTERM', interrupt);
+			},
+		});
+		cleanupFailed = failures.length > 0;
+		for (const failure of failures) {
+			console.error(`Fixture cleanup failed (${failure.name}): ${await cleanupDiagnostic(failure.error, redact)}`);
 		}
-		const removed = await docker(['rm', '-f', name]);
-		if (removed.code !== 0 && !removed.output.includes('No such container')) {
-			exitCode = 1;
-			console.error(`Fixture cleanup failed: ${removed.output}`);
-		} else console.log(`Removed fixture container: ${name}`);
-		await rm(directory, { recursive: true, force: true });
-		process.off('SIGINT', interrupt);
-		process.off('SIGTERM', interrupt);
 	}
-	return interrupted ? 130 : mailpitFailed ? 1 : exitCode ?? 1;
+	if (interrupted) return 130;
+	if (mailpitFailed) return 1;
+	if (exitCode !== 0) return exitCode ?? 1;
+	return cleanupFailed ? 1 : 0;
 }
 
 if (import.meta.main) await runDirect(['compat', 'run'], import.meta.url, { runCompatibility });
