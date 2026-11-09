@@ -18,7 +18,7 @@ jobs:
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - parallel:
           - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
-          - uses: kjanat/runner@97ed0af3ba6d6ac79cd2cb0782b6d762f15b8361 # master
+          - uses: kjanat/runner@97ed0af3ba6d6ac79cd2cb0782b6d762f15b8361 # v0
       - run: runner i --no-tools -s build
       - parallel:
           - name: Pack public SDK
