@@ -280,8 +280,10 @@ was added, confirming that the older CLI's exception did not apply to it.
 
 On 2026-10-30, both KDF probes reproduced `bw` 2026.10.1's user-key-ID
 backfill failure on each of Vaultwarden 1.37.0, 1.37.1, 1.37.2 and 1.37.3.
-These exact pairs expect `KeyIdBackfillError` together with HTTP 404 from the
-user-key-ID request. Other status codes and unrelated failures still fail normally.
+The full matrix on 2026-11-09 reproduced the same failure for `bw` 2026.10.0
+on those four servers. These exact pairs expect `KeyIdBackfillError` together
+with HTTP 404 from the user-key-ID request. Other status codes and unrelated
+failures still fail normally.
 
 For compatible pairs, the runner executes KDF/vault checks, eight external-import
 shards, and authentication/REST parity. A shard can be rerun with

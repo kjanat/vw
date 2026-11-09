@@ -19,7 +19,17 @@
 		},
 		{
 			"server": "1.37.0",
+			"referenceCliVersion": "2026.10.0",
+			"error": "missing-user-key-id-endpoint"
+		},
+		{
+			"server": "1.37.0",
 			"referenceCliVersion": "2026.10.1",
+			"error": "missing-user-key-id-endpoint"
+		},
+		{
+			"server": "1.37.1",
+			"referenceCliVersion": "2026.10.0",
 			"error": "missing-user-key-id-endpoint"
 		},
 		{
@@ -29,7 +39,17 @@
 		},
 		{
 			"server": "1.37.2",
+			"referenceCliVersion": "2026.10.0",
+			"error": "missing-user-key-id-endpoint"
+		},
+		{
+			"server": "1.37.2",
 			"referenceCliVersion": "2026.10.1",
+			"error": "missing-user-key-id-endpoint"
+		},
+		{
+			"server": "1.37.3",
+			"referenceCliVersion": "2026.10.0",
 			"error": "missing-user-key-id-endpoint"
 		},
 		{
