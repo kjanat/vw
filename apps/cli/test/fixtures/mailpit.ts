@@ -1,3 +1,4 @@
+import { terminate } from '#test/fixtures/lifecycle';
 import { createConnection, createServer } from 'node:net';
 
 /** Hold all reservations until every port has been selected, so none can be selected twice. */
@@ -111,19 +112,7 @@ export async function startMailpit(options: MailpitOptions) {
 				stopping = true;
 				options.signal?.removeEventListener('abort', abort);
 				if (child.exitCode === null && child.signalCode === null) {
-					child.kill('SIGTERM');
-					let timer: ReturnType<typeof setTimeout> | undefined;
-					try {
-						const exited = await Promise.race([
-							child.exited.then(() => true),
-							new Promise<false>(resolve => {
-								timer = setTimeout(() => resolve(false), options.shutdownTimeoutMs ?? 2000);
-							}),
-						]);
-						if (!exited) child.kill('SIGKILL');
-					} finally {
-						clearTimeout(timer);
-					}
+					await terminate(child.exited, signal => child.kill(signal), options.shutdownTimeoutMs);
 				}
 				await child.exited;
 				await streams;
