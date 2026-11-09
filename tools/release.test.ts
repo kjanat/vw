@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { checksum, parseRelease, verifyChecksums, type ReleaseMetadata } from './release/metadata.ts';
 import { publicationNeeded } from './release/publish.ts';
+import { publishedOptionalDependency } from './release/verify.ts';
 import { smokeConsumer } from './release/smoke.mjs';
 import { repoRoot } from './runtime.mjs';
 
@@ -34,6 +35,16 @@ test('release metadata rejects mismatched versions, packages, source and workflo
 	}
 	expect(parseRelease(JSON.stringify({ ...metadata, tag: 'v0.1.3+build-x', version: '0.1.3+build-x' })).prerelease)
 		.toBe(false);
+});
+
+test('preview optional dependencies use the long pkg-pr-new URL', () => {
+	const repository = 'git+https://github.com/kjanat/vw.git';
+	const compact = 'https://pkg.pr.new/@kjanat/vaultwarden-cli@abc1234';
+	expect(publishedOptionalDependency(compact, repository)).toBe(
+		'https://pkg.pr.new/kjanat/vw/@kjanat/vaultwarden-cli@abc1234',
+	);
+	const long = 'https://pkg.pr.new/kjanat/vw/@kjanat/vaultwarden@abc1234';
+	expect(publishedOptionalDependency(long, repository)).toBe(long);
 });
 
 test('npm publication requires E404 or identical existing archive integrity', () => {

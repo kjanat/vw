@@ -6,6 +6,17 @@ import { resolve } from 'node:path';
 import { runDirect, inDirectory, repoRoot } from '../runtime.mjs';
 import { runConsumerSmoke } from './smoke.mjs';
 
+export function publishedOptionalDependency(metadataUrl: string, repositoryUrl: string) {
+	const repo = repositoryUrl.match(/github\.com[:/](?<owner>[^/]+)\/(?<name>[^/.]+)/);
+	assert(repo?.groups, `Cannot read GitHub repo from ${repositoryUrl}`);
+	const prefix = `/${repo.groups.owner}/${repo.groups.name}`;
+	const url = new URL(metadataUrl);
+	// Compact preview metadata omits owner/repo. The packed manifest uses the long URL.
+	if (url.pathname === prefix || url.pathname.startsWith(`${prefix}/`)) return url.href;
+	url.pathname = `${prefix}${url.pathname}`;
+	return url.href;
+}
+
 export async function verifyRelease(runtime: 'node' | 'bun', previewMetadataPath?: string) {
 	return inDirectory(repoRoot, async () => {
 		assert(runtime === 'node' || runtime === 'bun', 'Choose node or bun');
@@ -17,6 +28,7 @@ export async function verifyRelease(runtime: 'node' | 'bun', previewMetadataPath
 			const manifest = JSON.parse(await readFile(resolve(workspaces[packageId], 'package.json'), 'utf8')) as {
 				name: string;
 				version: string;
+				repository?: { url?: string };
 			};
 			if (!metadata) return { ...manifest, source: `file:${resolve('artifacts', `${packageId}.tgz`)}` };
 			const published = metadata.packages.find(pkg => pkg.name === manifest.name);
@@ -50,7 +62,11 @@ export async function verifyRelease(runtime: 'node' | 'bun', previewMetadataPath
 				const installed = JSON.parse(
 					await readFile(resolve(consumer, 'node_modules', sdk.name, 'package.json'), 'utf8'),
 				) as { optionalDependencies?: Record<string, string> };
-				assert.deepEqual(installed.optionalDependencies, { [cli.name]: metadata ? cli.source : cli.version });
+				const repository = sdk.repository?.url;
+				assert(repository, `Missing repository for ${sdk.name}`);
+				assert.deepEqual(installed.optionalDependencies, {
+					[cli.name]: metadata ? publishedOptionalDependency(cli.source, repository) : cli.version,
+				});
 			}
 			runConsumerSmoke(runtime, consumer, sdk.version, installation);
 		}
