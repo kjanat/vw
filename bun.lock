@@ -65,6 +65,9 @@
         "tsdown": "catalog:",
         "typescript": "catalog:",
       },
+      "optionalDependencies": {
+        "@kjanat/vaultwarden-cli": "workspace:*",
+      },
     },
   },
   "patchedDependencies": {

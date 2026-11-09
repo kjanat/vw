@@ -267,9 +267,17 @@ export function createRepoCLI(direct: Record<string, unknown> = {}) {
 			command('smoke').description('Check packages installed in an isolated consumer directory')
 				.flag('consumer', flag.path({ type: 'directory' }).env('CONSUMER_DIRECTORY').required())
 				.flag('expected-sdk-version', flag.string({ nonEmpty: true }).env('EXPECTED_SDK_VERSION').required())
+				.flag(
+					'cli',
+					flag.enum(['direct', 'optional', 'omitted']).env('EXPECTED_CLI').required()
+						.describe('How the consumer installed the CLI'),
+				)
 				.action(async ({ flags }) => {
-					await (await load('./release/smoke.mjs', () => import('./release/smoke.mjs')))
-						.smokeConsumer({ consumer: resolve(flags.consumer), expectedSdkVersion: flags['expected-sdk-version'] });
+					await (await load('./release/smoke.mjs', () => import('./release/smoke.mjs'))).smokeConsumer({
+						consumer: resolve(flags.consumer),
+						expectedSdkVersion: flags['expected-sdk-version'],
+						cli: flags.cli,
+					});
 				}),
 		)
 		.command(

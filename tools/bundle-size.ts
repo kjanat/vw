@@ -27,7 +27,10 @@ export async function compareBundles(options: { baseline: string; candidate: str
 				dependencies: { '@kjanat/vaultwarden': `file:${archive}` },
 			}),
 		);
-		execFileSync('bun', ['install', '--ignore-scripts'], { cwd, stdio: ['ignore', 'ignore', 'inherit'] });
+		execFileSync('bun', ['install', '--ignore-scripts', '--omit=optional'], {
+			cwd,
+			stdio: ['ignore', 'ignore', 'inherit'],
+		});
 		const sdk = join(cwd, 'node_modules/@kjanat/vaultwarden');
 		const bundle = async (source: string, filename: string) => {
 			const result = await build({

@@ -1,0 +1,19 @@
+{
+	"$schema": "https://turborepo.dev/schema.json",
+	"extends": [
+		"//"
+	],
+	"tasks": {
+		"build": {
+			"dependsOn": []
+		},
+		"lint": {
+			"dependsOn": []
+		},
+		"typecheck": {
+			"dependsOn": [
+				"build"
+			]
+		}
+	}
+}

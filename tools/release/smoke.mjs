@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
@@ -8,28 +9,59 @@ import { resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runDirect } from '../runtime.mjs';
 
-export function runConsumerSmoke(runtime, consumer, expectedSdkVersion) {
+const sdkName = '@kjanat/vaultwarden';
+const cliName = '@kjanat/vaultwarden-cli';
+
+export function runConsumerSmoke(runtime, consumer, expectedSdkVersion, cli) {
 	consumer = resolve(consumer);
 	execFileSync(runtime, [fileURLToPath(import.meta.url)], {
 		cwd: consumer,
 		stdio: 'inherit',
-		env: { ...process.env, CONSUMER_DIRECTORY: consumer, EXPECTED_SDK_VERSION: expectedSdkVersion },
+		env: { ...process.env, CONSUMER_DIRECTORY: consumer, EXPECTED_SDK_VERSION: expectedSdkVersion, EXPECTED_CLI: cli },
 	});
 }
 
-export async function smokeConsumer({ consumer, expectedSdkVersion }) {
+function resolveInstallation(consumer, cli) {
 	const requireFromConsumer = createRequire(resolve(consumer, 'package.json'));
-	const cliPath = requireFromConsumer.resolve('@kjanat/vaultwarden-cli/package.json');
-	const requireFromCli = createRequire(cliPath);
-	const sdkPath = requireFromCli.resolve('@kjanat/vaultwarden');
 	const installed = resolve(consumer, 'node_modules') + sep;
-	for (const path of [cliPath, sdkPath]) {
+	const vw = resolve(consumer, 'node_modules/.bin/vw');
+	const inside = path => {
 		assert(path.startsWith(installed), `Package resolved outside the consumer installation: ${path}`);
+		return path;
+	};
+	switch (cli) {
+		case 'direct': {
+			const cliPath = inside(requireFromConsumer.resolve(`${cliName}/package.json`));
+			return { cliPath, sdkPath: inside(createRequire(cliPath).resolve(sdkName)), vw };
+		}
+		case 'optional': {
+			const sdkPath = inside(requireFromConsumer.resolve(sdkName));
+			const cliPath = inside(createRequire(sdkPath).resolve(`${cliName}/package.json`));
+			assert.equal(createRequire(cliPath).resolve(sdkName), sdkPath, 'The optional CLI must use the installed SDK');
+			return { cliPath, sdkPath, vw };
+		}
+		case 'omitted': {
+			const sdkPath = inside(requireFromConsumer.resolve(sdkName));
+			let cliPath;
+			try {
+				cliPath = createRequire(sdkPath).resolve(`${cliName}/package.json`);
+			} catch (error) {
+				if (error?.code !== 'MODULE_NOT_FOUND') throw error;
+			}
+			assert(!cliPath?.startsWith(installed), `${cliName} must be absent: ${cliPath}`);
+			assert(!existsSync(vw), `vw must be absent: ${vw}`);
+			return { sdkPath };
+		}
+		default:
+			assert.fail(`Unknown CLI installation: ${cli}`);
 	}
-	const cli = requireFromConsumer('@kjanat/vaultwarden-cli/package.json');
+}
+
+export async function smokeConsumer({ consumer, expectedSdkVersion, cli }) {
+	const { cliPath, sdkPath, vw } = resolveInstallation(consumer, cli);
 	const sdkUrl = pathToFileURL(sdkPath);
 	const fixtures = new URL('../../apps/cli/test/fixtures/kdbx/', import.meta.url);
-	const sdk = requireFromCli('@kjanat/vaultwarden/package.json');
+	const sdk = createRequire(sdkPath)(`${sdkName}/package.json`);
 	const OriginalModule = WebAssembly.Module;
 	let wasmCompilations = 0;
 	WebAssembly.Module = new Proxy(OriginalModule, {
@@ -74,12 +106,12 @@ export async function smokeConsumer({ consumer, expectedSdkVersion }) {
 		assert.equal(htmlImport.items[0].name, 'Tea & Coffee');
 		assert.equal(htmlImport.items[0].notes, '<notes>');
 		assert.equal(htmlImport.items[0].login.password, 'secret');
-		for (const [command, expected] of [['--version', cli.version], ['sdk-version', sdk.version]]) {
-			const output = execFileSync(process.execPath, [resolve(consumer, 'node_modules/.bin/vw'), command], {
-				cwd: consumer,
-				encoding: 'utf8',
-			});
-			assert.equal(output.trim(), expected);
+		if (cliPath) {
+			const cliManifest = JSON.parse(await readFile(cliPath, 'utf8'));
+			for (const [command, expected] of [['--version', cliManifest.version], ['sdk-version', sdk.version]]) {
+				const output = execFileSync(process.execPath, [vw, command], { cwd: consumer, encoding: 'utf8' });
+				assert.equal(output.trim(), expected);
+			}
 		}
 
 		const password = '67t9b5g67$%Dh89n';
@@ -193,7 +225,7 @@ export async function smokeConsumer({ consumer, expectedSdkVersion }) {
 		console.log(
 			`Installed packages verified: ${process.versions.bun ? 'Bun' : 'Node'} ${
 				process.versions.bun ?? process.version
-			} / ${process.arch}; password-strength WASM, crypto, KDBX workers, login and sync.`,
+			} / ${process.arch}; CLI ${cli}; password-strength WASM, crypto, KDBX workers, login and sync.`,
 		);
 	} finally {
 		WebAssembly.Module = OriginalModule;
