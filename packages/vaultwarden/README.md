@@ -21,6 +21,15 @@ tables are decoded locally when their modules initialize; no network fetch is us
 npm install @kjanat/vaultwarden
 ```
 
+`@kjanat/vaultwarden-cli` is an optional dependency. Package managers install
+`optionalDependencies` by default, including the CLI and its `vw` executable.
+To install the SDK alone, omit optional dependencies. This omits every optional
+dependency in the project:
+
+```sh
+npm install --omit=optional @kjanat/vaultwarden
+```
+
 ## Usage
 
 ```ts

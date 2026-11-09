@@ -41,10 +41,18 @@ unset VW_SESSION
 ```
 
 For direct TypeScript integration, install the
-[@kjanat/vaultwarden SDK](packages/vaultwarden/README.md):
+[@kjanat/vaultwarden SDK](packages/vaultwarden/README.md). Package managers
+install `optionalDependencies` by default, so this also installs the CLI package:
 
 ```sh
 npm install @kjanat/vaultwarden
+```
+
+To install the SDK alone, omit optional dependencies. This omits every optional
+dependency in the project:
+
+```sh
+npm install --omit=optional @kjanat/vaultwarden
 ```
 
 See the [usage guide](docs/README.md), [implementation status](docs/implementation-status.md),

@@ -76,6 +76,9 @@ test('commands pass validated options to operations and honor runtime selection'
 		[new URL('./release/verify.ts', import.meta.url).href]: {
 			verifyRelease: (runtime: string, metadata?: string) => calls.push([runtime, metadata]),
 		},
+		[new URL('./release/smoke.mjs', import.meta.url).href]: {
+			smokeConsumer: (options: unknown) => calls.push(options),
+		},
 		[new URL('../experiments/wasip2/verify-sdk.mjs', import.meta.url).href]: {
 			verifySdk: (options: unknown) => calls.push(options),
 		},
@@ -85,6 +88,26 @@ test('commands pass validated options to operations and honor runtime selection'
 	});
 	expect((await app.execute(['release', 'verify', '--runtime', 'both'])).exitCode).toBe(0);
 	expect(calls.splice(0)).toEqual([['node', undefined], ['bun', undefined]]);
+	for (const cli of ['direct', 'optional', 'omitted']) {
+		const smoke = await app.execute(['release', 'smoke', '--consumer', repoRoot, '--expected-sdk-version', '0.1.3'], {
+			env: { EXPECTED_CLI: cli },
+		});
+		expect(smoke.exitCode).toBe(0);
+		expect(calls.splice(0)).toEqual([{ consumer: resolve(repoRoot), expectedSdkVersion: '0.1.3', cli }]);
+	}
+	for (const cli of [[], ['--cli', 'global']]) {
+		const smoke = await app.execute([
+			'release',
+			'smoke',
+			'--consumer',
+			repoRoot,
+			'--expected-sdk-version',
+			'0.1.3',
+			...cli,
+		]);
+		expect(smoke.exitCode).not.toBe(0);
+		expect(calls).toEqual([]);
+	}
 	expect(
 		(await app.execute([
 			'experiment',

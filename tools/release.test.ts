@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { checksum, parseRelease, verifyChecksums, type ReleaseMetadata } from './release/metadata.ts';
 import { publicationNeeded } from './release/publish.ts';
+import { publishedOptionalDependency } from './release/verify.ts';
 import { smokeConsumer } from './release/smoke.mjs';
 import { repoRoot } from './runtime.mjs';
 
@@ -34,6 +35,16 @@ test('release metadata rejects mismatched versions, packages, source and workflo
 	}
 	expect(parseRelease(JSON.stringify({ ...metadata, tag: 'v0.1.3+build-x', version: '0.1.3+build-x' })).prerelease)
 		.toBe(false);
+});
+
+test('preview optional dependencies use the long pkg-pr-new URL', () => {
+	const repository = 'git+https://github.com/kjanat/vw.git';
+	const compact = 'https://pkg.pr.new/@kjanat/vaultwarden-cli@abc1234';
+	expect(publishedOptionalDependency(compact, repository)).toBe(
+		'https://pkg.pr.new/kjanat/vw/@kjanat/vaultwarden-cli@abc1234',
+	);
+	const long = 'https://pkg.pr.new/kjanat/vw/@kjanat/vaultwarden@abc1234';
+	expect(publishedOptionalDependency(long, repository)).toBe(long);
 });
 
 test('npm publication requires E404 or identical existing archive integrity', () => {
@@ -225,24 +236,51 @@ test('tampered assets or changed tested archives stop release mutations', async 
 	}
 }, 30000);
 
-test('consumer smoke rejects packages resolved from an ancestor installation', async () => {
-	const root = await mkdtemp(resolve(tmpdir(), 'vw-consumer-isolation-'));
-	try {
-		const consumer = resolve(root, 'consumer');
-		await mkdir(consumer);
-		await writeFile(resolve(consumer, 'package.json'), '{"private":true}');
-		for (const name of ['vaultwarden-cli', 'vaultwarden']) {
-			const directory = resolve(root, 'node_modules/@kjanat', name);
-			await mkdir(directory, { recursive: true });
-			await writeFile(
-				resolve(directory, 'package.json'),
-				JSON.stringify({ name: `@kjanat/${name}`, main: 'index.mjs' }),
-			);
-			await writeFile(resolve(directory, 'index.mjs'), 'throw new Error("Ancestor package must not be imported");');
+test('consumer smoke resolves each CLI installation inside the consumer before importing the SDK', async () => {
+	const sdk = 'consumer/node_modules/@kjanat/vaultwarden';
+	const cli = 'consumer/node_modules/@kjanat/vaultwarden-cli';
+	const ancestor = { 'node_modules/@kjanat/vaultwarden': sdk, 'node_modules/@kjanat/vaultwarden-cli': cli };
+	const outside = 'Package resolved outside the consumer installation';
+	const cases: [string, Record<string, string>, string, boolean?][] = [
+		['direct', ancestor, outside],
+		['optional', ancestor, outside],
+		['omitted', ancestor, outside],
+		['direct', { [sdk]: sdk, [cli]: cli }, `Imported ${sdk}`],
+		['optional', { [sdk]: sdk }, 'Cannot find module'],
+		[
+			'optional',
+			{ [sdk]: sdk, [cli]: cli, [`${cli}/node_modules/@kjanat/vaultwarden`]: sdk },
+			'must use the installed SDK',
+		],
+		['optional', { [sdk]: sdk, [cli]: cli }, `Imported ${sdk}`],
+		['omitted', { [sdk]: sdk, [cli]: cli }, '@kjanat/vaultwarden-cli must be absent'],
+		['omitted', { [sdk]: sdk }, 'vw must be absent', true],
+		['omitted', { [sdk]: sdk, 'node_modules/@kjanat/vaultwarden-cli': cli }, `Imported ${sdk}`],
+		['omitted', { [sdk]: sdk }, `Imported ${sdk}`],
+		['global', { [sdk]: sdk }, 'Unknown CLI installation: global'],
+	];
+	for (const [installation, layout, error, vw] of cases) {
+		const root = await mkdtemp(resolve(tmpdir(), 'vw-consumer-isolation-'));
+		try {
+			const consumer = resolve(root, 'consumer');
+			await mkdir(resolve(consumer, 'node_modules/.bin'), { recursive: true });
+			await writeFile(resolve(consumer, 'package.json'), '{"private":true}');
+			if (vw) await writeFile(resolve(consumer, 'node_modules/.bin/vw'), '');
+			for (const [directory, name] of Object.entries(layout)) {
+				await mkdir(resolve(root, directory), { recursive: true });
+				await writeFile(
+					resolve(root, directory, 'package.json'),
+					JSON.stringify({ name: name.replace(/^.*node_modules\//, ''), main: 'index.mjs' }),
+				);
+				await writeFile(
+					resolve(root, directory, 'index.mjs'),
+					`throw new Error(${JSON.stringify(`Imported ${directory}`)});`,
+				);
+			}
+			await expect(smokeConsumer({ consumer, expectedSdkVersion: '0.1.3', cli: installation }), installation)
+				.rejects.toThrow(error);
+		} finally {
+			await rm(root, { recursive: true, force: true });
 		}
-		await expect(smokeConsumer({ consumer, expectedSdkVersion: '0.1.3' })).rejects
-			.toThrow('Package resolved outside the consumer installation');
-	} finally {
-		await rm(root, { recursive: true, force: true });
 	}
 });

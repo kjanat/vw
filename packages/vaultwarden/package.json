@@ -64,6 +64,9 @@
 		"tsdown": "catalog:",
 		"typescript": "catalog:"
 	},
+	"optionalDependencies": {
+		"@kjanat/vaultwarden-cli": "workspace:*"
+	},
 	"engines": {
 		"node": ">=24.8.0"
 	},

@@ -86,11 +86,11 @@ export async function verifySdk({ variant = 'p2', mode = 'default', optimization
 						[sdkManifest.name]: `file:${archive}`,
 						[cliManifest.name]: `file:${cliArchive}`,
 					},
-					overrides: { [sdkManifest.name]: `file:${archive}` },
+					overrides: { [sdkManifest.name]: `file:${archive}`, [cliManifest.name]: `file:${cliArchive}` },
 				}),
 			);
 			run('bun', ['install', '--ignore-scripts'], consumer);
-			runConsumerSmoke(runtime, consumer, sdkManifest.version);
+			runConsumerSmoke(runtime, consumer, sdkManifest.version, 'direct');
 			const installed = join(consumer, 'node_modules', sdkManifest.name);
 			const sizes = { js: 0, maps: 0, declarations: 0, wasm: 0, other: 0 };
 			for (const file of readdirSync(installed, { recursive: true })) {

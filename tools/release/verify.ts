@@ -6,48 +6,70 @@ import { resolve } from 'node:path';
 import { runDirect, inDirectory, repoRoot } from '../runtime.mjs';
 import { runConsumerSmoke } from './smoke.mjs';
 
+export function publishedOptionalDependency(metadataUrl: string, repositoryUrl: string) {
+	const repo = repositoryUrl.match(/github\.com[:/](?<owner>[^/]+)\/(?<name>[^/.]+)/);
+	assert(repo?.groups, `Cannot read GitHub repo from ${repositoryUrl}`);
+	const prefix = `/${repo.groups.owner}/${repo.groups.name}`;
+	const url = new URL(metadataUrl);
+	// Compact preview metadata omits owner/repo. The packed manifest uses the long URL.
+	if (url.pathname === prefix || url.pathname.startsWith(`${prefix}/`)) return url.href;
+	url.pathname = `${prefix}${url.pathname}`;
+	return url.href;
+}
+
 export async function verifyRelease(runtime: 'node' | 'bun', previewMetadataPath?: string) {
 	return inDirectory(repoRoot, async () => {
 		assert(runtime === 'node' || runtime === 'bun', 'Choose node or bun');
 		const workspaces = { vaultwarden: 'packages/vaultwarden', cli: 'apps/cli' } as const;
-		const packages = Object.fromEntries(
-			await Promise.all(
-				Object.entries(workspaces).map(async ([packageId, workspace]) => {
-					const manifest = JSON.parse(await readFile(resolve(workspace, 'package.json'), 'utf8')) as { name: string };
-					return [manifest.name, `file:${resolve('artifacts', `${packageId}.tgz`)}`];
-				}),
-			),
-		);
-		let dependencies = packages;
-		if (previewMetadataPath) {
-			const metadata = JSON.parse(await readFile(previewMetadataPath, 'utf8')) as {
-				packages: { name: string; url: string }[];
+		const metadata = previewMetadataPath
+			? JSON.parse(await readFile(previewMetadataPath, 'utf8')) as { packages: { name: string; url: string }[] }
+			: undefined;
+		const load = async (packageId: keyof typeof workspaces) => {
+			const manifest = JSON.parse(await readFile(resolve(workspaces[packageId], 'package.json'), 'utf8')) as {
+				name: string;
+				version: string;
+				repository?: { url?: string };
 			};
-			const cli = JSON.parse(await readFile(resolve(workspaces.cli, 'package.json'), 'utf8')) as { name: string };
-			const published = metadata.packages.find(pkg => pkg.name === cli.name);
-			assert(published, `Missing publication metadata for ${cli.name}`);
-			dependencies = { [cli.name]: published.url };
-		}
+			if (!metadata) return { ...manifest, source: `file:${resolve('artifacts', `${packageId}.tgz`)}` };
+			const published = metadata.packages.find(pkg => pkg.name === manifest.name);
+			assert(published, `Missing publication metadata for ${manifest.name}`);
+			return { ...manifest, source: published.url };
+		};
+		const sdk = await load('vaultwarden');
+		const cli = await load('cli');
+		const consumers = [
+			{ label: 'sdk', dependency: sdk, cli: 'optional', options: [] },
+			{ label: 'sdk-only', dependency: sdk, cli: 'omitted', options: ['--omit=optional'] },
+			{ label: 'cli', dependency: cli, cli: 'direct', options: [] },
+		] as const;
 		const consumerRoot = resolve('.cache');
 		await mkdir(consumerRoot, { recursive: true });
-		const consumer = await mkdtemp(resolve(consumerRoot, 'vw-package-consumer-'));
-		const sdk = JSON.parse(await readFile(resolve(workspaces.vaultwarden, 'package.json'), 'utf8')) as {
-			name: string;
-			version: string;
-		};
-		await writeFile(
-			resolve(consumer, 'package.json'),
-			JSON.stringify({
-				private: true,
-				type: 'module',
-				dependencies,
-				// A same-version registry SDK can otherwise satisfy the CLI's dependency
-				// independently of the direct file dependency. Test the packed SDK everywhere.
-				...(!previewMetadataPath ? { overrides: { [sdk.name]: packages[sdk.name] } } : {}),
-			}),
-		);
-		execFileSync('bun', ['install', '--ignore-scripts'], { cwd: consumer, stdio: 'inherit' });
-		runConsumerSmoke(runtime, consumer, sdk.version);
+		for (const { label, dependency, cli: installation, options } of consumers) {
+			const consumer = await mkdtemp(resolve(consumerRoot, `vw-${label}-consumer-`));
+			await writeFile(
+				resolve(consumer, 'package.json'),
+				JSON.stringify({
+					private: true,
+					type: 'module',
+					dependencies: { [dependency.name]: dependency.source },
+					// Same-version registry packages can otherwise satisfy the dependencies between
+					// the SDK and CLI independently of the archives. Test the packed packages everywhere.
+					...(!metadata ? { overrides: { [sdk.name]: sdk.source, [cli.name]: cli.source } } : {}),
+				}),
+			);
+			execFileSync('bun', ['install', '--ignore-scripts', ...options], { cwd: consumer, stdio: 'inherit' });
+			if (dependency === sdk) {
+				const installed = JSON.parse(
+					await readFile(resolve(consumer, 'node_modules', sdk.name, 'package.json'), 'utf8'),
+				) as { optionalDependencies?: Record<string, string> };
+				const repository = sdk.repository?.url;
+				assert(repository, `Missing repository for ${sdk.name}`);
+				assert.deepEqual(installed.optionalDependencies, {
+					[cli.name]: metadata ? publishedOptionalDependency(cli.source, repository) : cli.version,
+				});
+			}
+			runConsumerSmoke(runtime, consumer, sdk.version, installation);
+		}
 	});
 }
 

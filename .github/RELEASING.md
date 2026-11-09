@@ -5,11 +5,14 @@
 CI runs formatting, source checks and package builds independently. Type checks,
 lint and unit tests use the checkout, with Turbo building their workspace
 dependencies. The package build uses `bun pm pack --ignore-scripts` and uploads
-the archives and SHA-256 sidecars as workflow artifacts. Separate consumers
-install the exact archives under Node 24.8.0, Node 26 and Bun on Linux amd64,
-plus Node 26 on Linux arm64. Each consumer checks package versions, independent
-PBKDF2 and Argon2id vectors, authenticated encryption, all four KDBX worker
-fixtures, and SDK prelogin/login/sync through a local HTTP fixture. The full
+the archives and SHA-256 sidecars as workflow artifacts. Separate jobs install
+the exact archives under Node 24.8.0, Node 26 and Bun on Linux amd64, plus
+Node 26 on Linux arm64. Each job installs three isolated consumers: the SDK with
+its optional CLI, the SDK with `--omit=optional`, and the CLI alone. The SDK
+consumers check the packed optional CLI dependency. Each consumer checks package
+versions, independent PBKDF2 and Argon2id vectors, authenticated encryption, all
+four KDBX worker fixtures, and SDK prelogin/login/sync through a local HTTP
+fixture. The full
 Vaultwarden compatibility matrix runs on Node 26. Releases, nightly runs and
 master pushes cover every stable server and reference CLI combination at or above
 the configured version floors, including patch releases. Pull requests cover
@@ -20,19 +23,20 @@ CI calls the `pkg-pr-new` workflow after its source and package checks pass,
 preserving the pull-request event so the publisher can comment on the PR. It
 reuses that run's build artifacts and verifies their archive checksums. The
 built packages are extracted into temporary directories, then the locked
-`pkg-pr-new` command repacks them with matching preview dependency URLs. The
-consumer uses the publisher's URLs and checksums and installs only the CLI
-preview, allowing its SDK dependency to resolve without overrides. Source checks
-are not repeated for previews. The pkg.pr.new
+`pkg-pr-new` command repacks them with matching preview dependency URLs,
+including the SDK's optional CLI. The consumers install the publisher's URLs
+without overrides, and the SDK consumers resolve the CLI through that rewritten
+optional dependency. Source checks are not repeated for previews. The pkg.pr.new
 GitHub App must be installed on this repository before publication.
 
 Release operations use `bun run repo release`. The workflows call `draft prepare`,
 `draft stage`, `draft attach`, `download`, `verify-attestations`, `validate`, and
 `publish`; DreamCLI binds their inputs directly from the workflow environment.
-The shared `smoke` command resolves the installed CLI and its SDK from the consumer
-directory and rejects packages found outside that installation. Its runner and
-KDBX fixtures stay in the repository; release checks and the WASIp2 experiment
-use the same `runConsumerSmoke` helper.
+The shared `smoke` command resolves the installed SDK and CLI from the consumer
+directory and rejects packages found outside that installation. It fails when a
+default SDK installation lacks the CLI, and when `--omit=optional` leaves the CLI
+or `vw` installed. Its runner and KDBX fixtures stay in the repository; release
+checks and the WASIp2 experiment use the same `runConsumerSmoke` helper.
 
 Each command also supports flags and `--help`. The command entrypoints in
 `tools/release` are importable and executable through the same CLI.
