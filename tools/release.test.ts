@@ -21,9 +21,14 @@ const metadata: ReleaseMetadata = {
 test('release metadata rejects mismatched versions, packages, source and workflow IDs', () => {
 	expect(parseRelease(JSON.stringify(metadata))).toEqual(metadata);
 	for (
-		const patch of [{ version: '0.1.2' }, { packages: ['cli'] }, { sha: '../main' }, { run: 0 }, { run: 1.5 }, {
-			prerelease: true,
-		}]
+		const patch of [
+			{ version: '0.1.2' },
+			{ packages: ['cli'] },
+			{ sha: '../main' },
+			{ run: 0 },
+			{ run: 1.5 },
+			{ prerelease: true },
+		]
 	) {
 		expect(() => parseRelease(JSON.stringify({ ...metadata, ...patch }))).toThrow();
 	}
@@ -36,10 +41,12 @@ test('npm publication requires E404 or identical existing archive integrity', ()
 	expect(publicationNeeded(0, '["sha512-same"]', 'sha512-same')).toBe(false);
 	expect(publicationNeeded(1, '{"error":{"code":"E404"}}', 'sha512-same')).toBe(true);
 	for (
-		const [status, output] of [[0, '"sha512-different"'], [0, '[]'], [1, '{"error":{"code":"E401"}}'], [
-			null,
-			'{"error":{"code":"E404"}}',
-		]] as const
+		const [status, output] of [
+			[0, '"sha512-different"'],
+			[0, '[]'],
+			[1, '{"error":{"code":"E401"}}'],
+			[null, '{"error":{"code":"E404"}}'],
+		] as const
 	) {
 		expect(() => publicationNeeded(status, output, 'sha512-same')).toThrow();
 	}
@@ -75,11 +82,10 @@ async function fixture() {
 	await writeFile(resolve(root, 'package.json'), '{"type":"module"}');
 	await symlink(resolve(repoRoot, 'node_modules'), resolve(root, 'node_modules'));
 	for (
-		const [id, directory, name] of [['vaultwarden', 'packages/vaultwarden', '@kjanat/vaultwarden'], [
-			'cli',
-			'apps/cli',
-			'@kjanat/vaultwarden-cli',
-		]]
+		const [id, directory, name] of [
+			['vaultwarden', 'packages/vaultwarden', '@kjanat/vaultwarden'],
+			['cli', 'apps/cli', '@kjanat/vaultwarden-cli'],
+		]
 	) {
 		const manifest = JSON.stringify({ name, version: metadata.version, publishConfig: { access: 'public' } });
 		await writeFile(resolve(root, directory!, 'package.json'), manifest);
@@ -153,9 +159,14 @@ test('release commands consume workflow env and retain draft, provenance and pub
 	const f = await fixture();
 	try {
 		for (
-			const args of [['draft', 'prepare'], ['draft', 'stage'], ['verify-attestations'], ['draft', 'attach'], [
-				'download',
-			], ['validate']]
+			const args of [
+				['draft', 'prepare'],
+				['draft', 'stage'],
+				['verify-attestations'],
+				['draft', 'attach'],
+				['download'],
+				['validate'],
+			]
 		) {
 			const result = await f.execute(args);
 			expect({ args, code: result.code, stderr: result.stderr }).toEqual({ args, code: 0, stderr: '' });

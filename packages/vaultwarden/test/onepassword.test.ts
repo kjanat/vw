@@ -39,10 +39,10 @@ test('1PUX corpus maps credentials, tags, identities, notes, history, archive, a
 		reprompt: 1,
 		login: { username: 'alice', password: '  synthetic-password  ' },
 	});
-	expect((login.login as JsonObject).uris).toEqual([{ uri: 'http://example.com/a,b', match: null }, {
-		uri: 'https://second.example',
-		match: null,
-	}]);
+	expect((login.login as JsonObject).uris).toEqual([
+		{ uri: 'http://example.com/a,b', match: null },
+		{ uri: 'https://second.example', match: null },
+	]);
 	expect(login.notes).toBe('Multiline: first\nsecond\n');
 	expect(login.fields).toContainEqual({ name: 'checked', value: 'true', type: 2 });
 	expect(login.fields).toContainEqual({ name: 'unchecked', value: 'false', type: 2 });

@@ -170,27 +170,27 @@ live('focused external import matches the independent bw importer', async () => 
 		const clipperz = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://dtd.example.com/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"><body><textarea>${
-			JSON.stringify([{
-				label: `${prefix} Clipperz login \uE009 Username`,
-				data: { notes: 'first\\nsecond' },
-				currentVersion: {
-					fields: {
-						username: { actionType: 'username', value: 'clipperz-user' },
-						password: { actionType: 'password', value: 'clipperz-secret' },
-						url: { actionType: 'url', value: 'clipperz.example.test' },
-					},
-				},
-			}, {
-				label: `${prefix} Clipperz note`,
-				data: { notes: 'clipperz secure note' },
-				currentVersion: { fields: {} },
-			}]).replaceAll('&', '&amp;').replaceAll('<', '&lt;')
-		}</textarea></body></html>`;
+	JSON.stringify([{
+		label: `${prefix} Clipperz login \uE009 Username`,
+		data: { notes: 'first\\nsecond' },
+		currentVersion: {
+			fields: {
+				username: { actionType: 'username', value: 'clipperz-user' },
+				password: { actionType: 'password', value: 'clipperz-secret' },
+				url: { actionType: 'url', value: 'clipperz.example.test' },
+			},
+		},
+	}, {
+		label: `${prefix} Clipperz note`,
+		data: { notes: 'clipperz secure note' },
+		currentVersion: { fields: {} },
+	}]).replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+}</textarea></body></html>`;
 		const passwordDepot =
 			`<?xml version="1.0"?><passwordfile><header><version>17.0</version><encrypted>False</encrypted></header>
 <favorites>${
-				Buffer.from(`${prefix}-favorite`).toString('base64')
-			}</favorites><passwords><group fingerprint="${prefix}-group" name="${prefix} Depot folder">
+	Buffer.from(`${prefix}-favorite`).toString('base64')
+}</favorites><passwords><group fingerprint="${prefix}-group" name="${prefix} Depot folder">
 <item><type>0</type><description>${prefix} Password Depot login</description><comment>Depot note</comment><fingerprint>${prefix}-favorite</fingerprint>
 <username>depot-user</username><password>depot-secret</password><url>depot.example.test</url><customfields>
 <field><name>Recovery</name><value>depot-recovery</value><type>2</type></field></customfields></item>

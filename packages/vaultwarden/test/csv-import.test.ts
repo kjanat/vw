@@ -1421,11 +1421,11 @@ test('NordPass maps all four item types, JSON fields/URLs, expiration, and perso
 			additional_urls: JSON.stringify(['https://second.example', '']),
 			folder: '\\Work\\Web',
 			note: 'notes',
-			custom_fields: JSON.stringify([{ label: 'Hidden', type: 'hidden', value: ' literal ' }, {
-				label: 'Long',
-				type: 'text',
-				value: 'x'.repeat(201),
-			}, { label: 'Blank', type: 'text', value: '  ' }]),
+			custom_fields: JSON.stringify([
+				{ label: 'Hidden', type: 'hidden', value: ' literal ' },
+				{ label: 'Long', type: 'text', value: 'x'.repeat(201) },
+				{ label: 'Blank', type: 'text', value: '  ' },
+			]),
 		},
 		{
 			type: 'credit_card',
@@ -1585,15 +1585,11 @@ test('Avira maps website, optional hostname names, and alternate usernames witho
 	expect(parsed[2]).toMatchObject({ name: '--', notes: null, login: { username: null, uris: [] } });
 });
 test('Passbolt uses the LastPass mapping including structured records and grouping', () => {
-	const source = writeCsv([['url', 'name', 'username', 'password', 'extra', 'grouping', 'fav'], [
-		'https://example.com',
-		'Passbolt',
-		'alice',
-		' secret ',
-		'notes',
-		'Work\\Web',
-		'1',
-	], ['http://sn', 'Note', '', '', 'multiline\nnotes', 'Work\\Web', '0']]);
+	const source = writeCsv([
+		['url', 'name', 'username', 'password', 'extra', 'grouping', 'fav'],
+		['https://example.com', 'Passbolt', 'alice', ' secret ', 'notes', 'Work\\Web', '1'],
+		['http://sn', 'Note', '', '', 'multiline\nnotes', 'Work\\Web', '0'],
+	]);
 	const parsed = parseExternalCsv('passboltcsv', source);
 	expect(parsed.folders).toMatchObject([{ name: 'Work/Web' }]);
 	expect(items(parsed)[0]).toMatchObject({ favorite: true, notes: 'notes', login: { password: ' secret ' } });

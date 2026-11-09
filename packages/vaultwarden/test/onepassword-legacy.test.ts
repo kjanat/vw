@@ -26,10 +26,10 @@ test('1PIF standard and OPVault records import mapped data and exclude trash', (
 		passwordHistory: [{ password: 'previous synthetic password', lastUsedDate: '2023-11-14T22:13:20.000Z' }],
 	});
 	expect(items[0]!.fields).toEqual([{ name: 'Private', value: 'synthetic-hidden', type: 1 }]);
-	expect((items[0]!.login as JsonObject).uris).toEqual([{ uri: 'http://example.com/a,b', match: null }, {
-		uri: 'https://second.example.com',
-		match: null,
-	}]);
+	expect((items[0]!.login as JsonObject).uris).toEqual([
+		{ uri: 'http://example.com/a,b', match: null },
+		{ uri: 'https://second.example.com', match: null },
+	]);
 	expect(items[1]!.card).toEqual({
 		number: '4111111111111111',
 		brand: 'Visa',
@@ -60,11 +60,10 @@ test('1PIF missing fields, unknown designations and legacy category fallback rem
 		secureContents: {
 			passwordHistory: Array.from({ length: 9 }, (_, i) => ({ value: `synthetic-${i}`, time: 1700000000 + i })),
 			sections: [{
-				fields: [{ n: 'number', v: 'synthetic passport', t: 'number' }, {
-					n: '__proto__',
-					v: 'literal',
-					t: 'prototype',
-				}],
+				fields: [
+					{ n: 'number', v: 'synthetic passport', t: 'number' },
+					{ n: '__proto__', v: 'literal', t: 'prototype' },
+				],
 			}],
 		},
 	};
@@ -163,11 +162,11 @@ test('Legacy CSV singular URLs stay intact, aliases stay case insensitive, malfo
 	expect(parseCsv('"x","a""b"')).toEqual([['x', 'a"b']]);
 });
 for (
-	const [format, source, count] of [['1password1pif', pif, 7], ['1passwordmaccsv', mac, 4], [
-		'1passwordwincsv',
-		windows,
-		3,
-	]] as const
+	const [format, source, count] of [
+		['1password1pif', pif, 7],
+		['1passwordmaccsv', mac, 4],
+		['1passwordwincsv', windows, 3],
+	] as const
 ) {
 	test(`${format} uses encrypted bulk import and validates malformed input before server writes`, async () => {
 		const owner = Buffer.alloc(64, 13);

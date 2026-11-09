@@ -428,9 +428,10 @@ test('invalid fragment URLs fail without requests, and password errors do not ex
 	let count = 0;
 	const transport = (async () => {
 		count++;
-		return Response.json({ send_access_error_type: 'password_hash_b64_required', secret: 'never echo' }, {
-			status: 400,
-		});
+		return Response.json(
+			{ send_access_error_type: 'password_hash_b64_required', secret: 'never echo' },
+			{ status: 400 },
+		);
 	}) as unknown as typeof fetch;
 	await expect(receiveSend('http://remote.example/#/send/id/key', { fetch: transport })).rejects.toThrow('HTTPS');
 	await expect(receiveSend(link.replace(seed.toString('base64url'), 'bad'), { fetch: transport })).rejects.toThrow(
@@ -441,9 +442,10 @@ test('invalid fragment URLs fail without requests, and password errors do not ex
 	expect(count).toBe(1);
 	const client = new VaultwardenClient('https://vault.example', {
 		fetch: (async () =>
-			Response.json({ send_access_error_type: 'server-controlled-secret' }, {
-				status: 400,
-			})) as unknown as typeof fetch,
+			Response.json(
+				{ send_access_error_type: 'server-controlled-secret' },
+				{ status: 400 },
+			)) as unknown as typeof fetch,
 	});
 	try {
 		await client.sendAccessToken(accessId);
@@ -491,11 +493,10 @@ for (const file of [false, true]) {
 }
 test('legacy password challenges remain distinct and unrelated token failures never trigger fallback', async () => {
 	for (
-		const [status, message, incorrect] of [[401, 'Password not provided', false], [
-			400,
-			'Invalid password',
-			true,
-		]] as const
+		const [status, message, incorrect] of [
+			[401, 'Password not provided', false],
+			[400, 'Invalid password', true],
+		] as const
 	) {
 		let count = 0;
 		const transport = (async () => {

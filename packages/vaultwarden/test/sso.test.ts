@@ -154,16 +154,19 @@ test('SSO email 2FA retries the same code once and requests delivery using the p
 			expect(body.get('code')).toBe(credentials.code);
 			expect(body.get('code_verifier')).toBe(credentials.codeVerifier);
 			if (grants === 1) {
-				return Response.json({
-					twoFactorProviders: [1, 7],
-					twoFactorProviders2: {
-						'7': {
-							challenge: 'Y2hhbGxlbmdl',
-							rpId: 'vault.example',
-							allowCredentials: [{ id: 'Y3JlZGVudGlhbA', type: 'public-key' }],
+				return Response.json(
+					{
+						twoFactorProviders: [1, 7],
+						twoFactorProviders2: {
+							'7': {
+								challenge: 'Y2hhbGxlbmdl',
+								rpId: 'vault.example',
+								allowCredentials: [{ id: 'Y3JlZGVudGlhbA', type: 'public-key' }],
+							},
 						},
 					},
-				}, { status: 400 });
+					{ status: 400 },
+				);
 			}
 			expect(body.get('twoFactorProvider')).toBe('1');
 			expect(body.get('twoFactorToken')).toBe('123456');
@@ -207,10 +210,7 @@ test('SSO login accepts an explicitly selected recovery code absent from Vaultwa
 			expect(body.get('code')).toBe(credentials.code);
 			expect(body.get('code_verifier')).toBe(credentials.codeVerifier);
 			if (++grants === 1) {
-				return Response.json({
-					TwoFactorProviders: ['0'],
-					TwoFactorProviders2: { '0': null },
-				}, { status: 400 });
+				return Response.json({ TwoFactorProviders: ['0'], TwoFactorProviders2: { '0': null } }, { status: 400 });
 			}
 			expect(body.get('twoFactorProvider')).toBe('8');
 			expect(body.get('twoFactorToken')).toBe('synthetic-recovery-code');

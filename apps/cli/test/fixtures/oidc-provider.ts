@@ -63,7 +63,7 @@ const server = Bun.serve({
 		if (url.pathname === '/token' && request.method === 'POST') {
 			if (
 				request.headers.get('Authorization')
-					!== `Basic ${Buffer.from('fixture-client:synthetic-oidc-secret').toString('base64')}`
+				!== `Basic ${Buffer.from('fixture-client:synthetic-oidc-secret').toString('base64')}`
 			) return json({ error: 'invalid_client' }, 401);
 			const body = new URLSearchParams(await request.text()),
 				code = body.get('code') ?? '',

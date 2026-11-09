@@ -288,11 +288,11 @@ test('Proton Pass JSON imports supported Vaultwarden item types, fields, favorit
 			totp: 'otpauth://totp/test',
 			uris: [{ uri: 'http://proton.example.test', match: null }],
 		},
-		fields: [{ name: 'email', value: 'alice@example.test', type: 0 }, {
-			name: 'Recovery',
-			value: 'backup-code',
-			type: 0,
-		}, { name: 'Private', value: 'hidden-value', type: 1 }],
+		fields: [
+			{ name: 'email', value: 'alice@example.test', type: 0 },
+			{ name: 'Recovery', value: 'backup-code', type: 0 },
+			{ name: 'Private', value: 'hidden-value', type: 1 },
+		],
 		folderId: expect.any(String),
 	});
 	expect(items(result)[1]).toMatchObject({
@@ -309,11 +309,11 @@ test('Proton Pass JSON imports supported Vaultwarden item types, fields, favorit
 	expect(items(result)[3]).toMatchObject({
 		type: 4,
 		identity: { firstName: 'Alice', middleName: 'Q', lastName: 'Example', email: 'alice@example.test' },
-		fields: [{ name: 'birthdate', value: '2000-01-01', type: 0 }, { name: 'gender', value: 'Other', type: 0 }, {
-			name: 'Section',
-			value: 'section-value',
-			type: 0,
-		}],
+		fields: [
+			{ name: 'birthdate', value: '2000-01-01', type: 0 },
+			{ name: 'gender', value: 'Other', type: 0 },
+			{ name: 'Section', value: 'section-value', type: 0 },
+		],
 	});
 	expect(items(result)[4]).toMatchObject({ login: { username: 'alias@example.test' } });
 	expect(items(result)[5]).toMatchObject({
@@ -323,19 +323,19 @@ test('Proton Pass JSON imports supported Vaultwarden item types, fields, favorit
 	});
 	expect(items(result)[6]).toMatchObject({
 		type: 2,
-		fields: [{ name: 'Password', value: 'wifi-secret', type: 1 }, { name: 'SSID', value: 'office', type: 0 }, {
-			name: 'Security',
-			value: 'WPA3',
-			type: 0,
-		}],
+		fields: [
+			{ name: 'Password', value: 'wifi-secret', type: 1 },
+			{ name: 'SSID', value: 'office', type: 0 },
+			{ name: 'Security', value: 'WPA3', type: 0 },
+		],
 	});
 	expect(items(result)[7]).toMatchObject({
 		type: 2,
-		fields: [{ name: 'Account', value: '1234', type: 0 }, { name: 'PIN', value: '5678', type: 1 }, {
-			name: 'count',
-			value: '3',
-			type: 0,
-		}],
+		fields: [
+			{ name: 'Account', value: '1234', type: 0 },
+			{ name: 'PIN', value: '5678', type: 1 },
+			{ name: 'count', value: '3', type: 0 },
+		],
 	});
 	expect(result.folders).toEqual([{ id: expect.any(String), name: 'Personal' }]);
 	const organization = parseExternalJson(
@@ -877,10 +877,10 @@ test('Enpass JSON maps nested folders, login data, secure notes, and cards', () 
 		}),
 	);
 	expect(items(result)).toHaveLength(3);
-	expect(result.folders).toEqual([{ id: expect.any(String), name: 'Personal' }, {
-		id: expect.any(String),
-		name: 'Personal/Social',
-	}]);
+	expect(result.folders).toEqual([
+		{ id: expect.any(String), name: 'Personal' },
+		{ id: expect.any(String), name: 'Personal/Social' },
+	]);
 	expect(items(result)[0]).toMatchObject({
 		name: 'Enpass login',
 		favorite: true,
@@ -942,11 +942,10 @@ test('Enpass JSON rejects malformed documents and ignores cyclic folder paths', 
 	const result = parseExternalJson(
 		'enpassjson',
 		JSON.stringify({
-			folders: [{ uuid: 'cycle-a', title: 'A', parent_uuid: 'cycle-b' }, {
-				uuid: 'cycle-b',
-				title: 'B',
-				parent_uuid: 'cycle-a',
-			}],
+			folders: [
+				{ uuid: 'cycle-a', title: 'A', parent_uuid: 'cycle-b' },
+				{ uuid: 'cycle-b', title: 'B', parent_uuid: 'cycle-a' },
+			],
 			items: [{ title: 'No folder', folders: ['cycle-a'] }],
 		}),
 	);

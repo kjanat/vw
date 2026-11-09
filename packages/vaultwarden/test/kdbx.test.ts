@@ -47,10 +47,12 @@ function setKdf(db: Kdbx, kind: 'aes3' | 'aes4' | 'argon2d' | 'argon2id') {
 	}
 }
 for (
-	const [kind, mode] of [['aes3', 'password'], ['aes4', 'combined'], ['argon2d', 'keyfile'], [
-		'argon2id',
-		'password',
-	]] as const
+	const [kind, mode] of [
+		['aes3', 'password'],
+		['aes4', 'combined'],
+		['argon2d', 'keyfile'],
+		['argon2id', 'password'],
+	] as const
 ) {
 	test(`KDBX ${kind} decodes ${mode} credentials in a worker and imports protected fields`, async () => {
 		const keyFile = mode === 'combined'
@@ -90,10 +92,12 @@ test('KDBX TOTP handles each secret encoding, precedence and a leading key prefi
 	const { entry } = database();
 	for (const key of [...entry.fields.keys()].filter(key => key.startsWith('TimeOtp-'))) entry.fields.delete(key);
 	for (
-		const [key, value] of [['TimeOtp-Secret', 'Hello'], ['TimeOtp-Secret-Hex', '48656c6c6f'], [
-			'TimeOtp-Secret-Base64',
-			'SGVsbG8=',
-		], ['TimeOtp-Secret-Base32', 'jbsw y3dp===']]
+		const [key, value] of [
+			['TimeOtp-Secret', 'Hello'],
+			['TimeOtp-Secret-Hex', '48656c6c6f'],
+			['TimeOtp-Secret-Base64', 'SGVsbG8='],
+			['TimeOtp-Secret-Base32', 'jbsw y3dp==='],
+		]
 	) {
 		entry.fields.set(key!, value!);
 		expect(kdbxTotp(entry)).toBe('JBSWY3DP');

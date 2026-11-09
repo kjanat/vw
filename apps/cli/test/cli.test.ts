@@ -607,12 +607,7 @@ test('quiet suppresses JSON, text, and command errors while allowing operations,
 	const dir = await mkdtemp(join(tmpdir(), 'vw-quiet-'));
 	try {
 		for (
-			const args of [['--quiet', 'status'], ['generate', '--quiet'], [
-				'send',
-				'template',
-				'text',
-				'--quiet',
-			]]
+			const args of [['--quiet', 'status'], ['generate', '--quiet'], ['send', 'template', 'text', '--quiet']]
 		) {
 			expect(await run(dir, args)).toEqual({ code: 0, stdout: '', stderr: '' });
 		}

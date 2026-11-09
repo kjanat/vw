@@ -376,9 +376,9 @@ export class VaultService {
 		const permissions = object(organization.permissions ?? {});
 		return type === 4 && permissions.editAnyCollection === true
 			|| (type === 0 || type === 1) && (
-					organization.allowAdminAccessToAllCollectionItems === true
-					|| await this.client.isVaultwardenServer()
-				);
+				organization.allowAdminAccessToAllCollectionItems === true
+				|| await this.client.isVaultwardenServer()
+			);
 	}
 	async confirmMember(organizationId: string, id: string): Promise<void> {
 		const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

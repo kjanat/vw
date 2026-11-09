@@ -177,12 +177,14 @@ async function parseItem(source: JsonObject): Promise<{ item: VaultItem; tag: st
 		if (['username', 'password'].includes(String(f.designation)) && f.value !== '') {
 			item.type = 1;
 			item.login![String(f.designation)] = f.value;
-		} else {custom(
+		} else {
+			custom(
 				item,
 				f.name,
 				f.fieldType === 'C' ? f.value !== '' ? 'true' : 'false' : f.value,
 				f.fieldType === 'P' ? 1 : f.fieldType === 'C' ? 2 : 0,
-			);}
+			);
+		}
 	}
 	if (category === '005') item.login!.password = details.password ?? null;
 	const history = array(details.passwordHistory).map(record).filter(h => !blank(h.value) && h.time != null)

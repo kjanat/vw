@@ -33,10 +33,13 @@ export async function verifyScorers(distribution = 'dist') {
 			assert.equal(isolated(password, context), baseline(password, context));
 		}
 		for (
-			const [password, expected] of [['password', 0], ['password11', 1], ['Weakpass2', 2], ['GoodPass3!', 3], [
-				'VeryStrong123@#',
-				4,
-			]]
+			const [password, expected] of [
+				['password', 0],
+				['password11', 1],
+				['Weakpass2', 2],
+				['GoodPass3!', 3],
+				['VeryStrong123@#', 4],
+			]
 		) {
 			assert.equal(p2(password), expected);
 		}

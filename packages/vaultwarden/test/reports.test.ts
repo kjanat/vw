@@ -13,10 +13,13 @@ const login = (id: string, password: string, username = ''): VaultItem => ({
 
 test('password-health scoring uses username tokens, no global brand words, and a Unicode scalar cap', () => {
 	for (
-		const [password, score] of [['password', 0], ['password11', 1], ['Weakpass2', 2], ['GoodPass3!', 3], [
-			'VeryStrong123@#',
-			4,
-		]] as const
+		const [password, score] of [
+			['password', 0],
+			['password11', 1],
+			['Weakpass2', 2],
+			['GoodPass3!', 3],
+			['VeryStrong123@#', 4],
+		] as const
 	) {
 		expect(passwordStrength(password)).toBe(score);
 	}

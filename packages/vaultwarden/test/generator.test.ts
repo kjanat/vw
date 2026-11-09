@@ -18,15 +18,20 @@ test('vault generation combines both synced policy fields and applies membership
 	};
 	expect(generateVaultSecret({ length: 5 }, snapshot)).toHaveLength(32);
 	for (
-		const overrides of [{ type: 0 }, { type: 1 }, { status: 0 }, { enabled: false }, { usePolicies: false }, {
-			isProviderUser: true,
-		}]
+		const overrides of [
+			{ type: 0 },
+			{ type: 1 },
+			{ status: 0 },
+			{ enabled: false },
+			{ usePolicies: false },
+			{ isProviderUser: true },
+		]
 	) {
 		expect(
-			generateVaultSecret({ length: 5 }, {
-				...snapshot,
-				profile: { organizations: [{ ...organization, ...overrides }] },
-			}),
+			generateVaultSecret(
+				{ length: 5 },
+				{ ...snapshot, profile: { organizations: [{ ...organization, ...overrides }] } },
+			),
 		).toHaveLength(5);
 	}
 	expect(generateVaultSecret({ length: 5 })).toHaveLength(5);

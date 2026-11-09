@@ -402,23 +402,25 @@ export function createRepoCLI(direct: Record<string, unknown> = {}) {
 						})
 						.action(async ({ flags, out }) => {
 							execFileSync('bun', ['run', 'build'], { cwd: repoRoot, stdio: 'inherit' });
-							const code = await (await load('../apps/cli/test/run-compatibility.ts', () =>
-								import('../apps/cli/test/run-compatibility.ts'))).runCompatibility({
-									version: flags['server-version'],
-									image: flags.image,
-									reference: flags.reference ? resolve(flags.reference) : undefined,
-									referenceVersion: flags['reference-version'],
-									protocolOnly: flags['protocol-only'],
-									smtp: flags.smtp,
-									sso: flags.sso,
-									testCase: flags.case,
-									importFormat: flags['import-format'],
-									importShard: flags['import-shard'],
-									skipImports: flags['skip-imports'],
-									focusedImport: flags['focused-import'],
-									listFiltersOnly: flags['list-filters-only'],
-									policyRedactionOnly: flags['policy-redaction-only'],
-								});
+							const code = await (await load(
+								'../apps/cli/test/run-compatibility.ts',
+								() => import('../apps/cli/test/run-compatibility.ts'),
+							)).runCompatibility({
+								version: flags['server-version'],
+								image: flags.image,
+								reference: flags.reference ? resolve(flags.reference) : undefined,
+								referenceVersion: flags['reference-version'],
+								protocolOnly: flags['protocol-only'],
+								smtp: flags.smtp,
+								sso: flags.sso,
+								testCase: flags.case,
+								importFormat: flags['import-format'],
+								importShard: flags['import-shard'],
+								skipImports: flags['skip-imports'],
+								focusedImport: flags['focused-import'],
+								listFiltersOnly: flags['list-filters-only'],
+								policyRedactionOnly: flags['policy-redaction-only'],
+							});
 							out.setExitCode(code);
 						}),
 				),

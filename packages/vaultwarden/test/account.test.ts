@@ -48,18 +48,21 @@ test('password challenge resumes one grant, requests email explicitly, and never
 			}
 			const body = new URLSearchParams(String(init.body));
 			if (++grants === 1) {
-				return Response.json({
-					TwoFactorProviders: [1, 2, 7],
-					TwoFactorProviders2: {
-						'1': { Email: 'untrusted' },
-						'2': { AuthUrl: 'https://api-test.duosecurity.com/oauth/v1/authorize?request=short-lived' },
-						'7': {
-							challenge: 'Y2hhbGxlbmdl',
-							rpId: 'example.com',
-							allowCredentials: [{ id: 'Y3JlZGVudGlhbA', type: 'public-key' }],
+				return Response.json(
+					{
+						TwoFactorProviders: [1, 2, 7],
+						TwoFactorProviders2: {
+							'1': { Email: 'untrusted' },
+							'2': { AuthUrl: 'https://api-test.duosecurity.com/oauth/v1/authorize?request=short-lived' },
+							'7': {
+								challenge: 'Y2hhbGxlbmdl',
+								rpId: 'example.com',
+								allowCredentials: [{ id: 'Y3JlZGVudGlhbA', type: 'public-key' }],
+							},
 						},
 					},
-				}, { status: 400 });
+					{ status: 400 },
+				);
 			}
 			expect(body.get('twoFactorProvider')).toBe('1');
 			expect(body.get('twoFactorToken')).toBe('123456');
@@ -108,10 +111,7 @@ test('password login accepts an explicitly selected recovery code absent from Va
 			if (String(_url).endsWith('/prelogin')) return Response.json({ kdf: 0, kdfIterations: 10000 });
 			const body = new URLSearchParams(String(init.body));
 			if (++grants === 1) {
-				return Response.json({
-					TwoFactorProviders: ['0'],
-					TwoFactorProviders2: { '0': null },
-				}, { status: 400 });
+				return Response.json({ TwoFactorProviders: ['0'], TwoFactorProviders2: { '0': null } }, { status: 400 });
 			}
 			expect(body.get('twoFactorProvider')).toBe('8');
 			expect(body.get('twoFactorToken')).toBe('recovery-token');

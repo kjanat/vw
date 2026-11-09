@@ -75,8 +75,8 @@ test('unpublished packages and update-channel failures remain distinct and never
 	const absent = (async () => new Response(null, { status: 404 })) as unknown as typeof fetch;
 	expect((await checkForUpdates(metadata, absent)).status).toBe('unpublished');
 	for (const status of [401, 429, 500]) {
-		const transport = (async () =>
-			Response.json({ message: 'synthetic secret' }, { status })) as unknown as typeof fetch;
+		const transport =
+			(async () => Response.json({ message: 'synthetic secret' }, { status })) as unknown as typeof fetch;
 		await expect(checkForUpdates(metadata, transport)).rejects.toThrow(`HTTP ${status}`);
 	}
 	for (const version of [null, 'secret-invalid-version', '1.2.3-01', '1.2.3+bad\nterminal']) {

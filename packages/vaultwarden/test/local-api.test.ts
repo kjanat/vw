@@ -66,9 +66,11 @@ function fixture(fetcher?: typeof fetch) {
 }
 test('local API rejects Origin and rebinding Host headers before invoking the backend', async () => {
 	const f = fixture();
-	const forbidden: Record<string, string>[] = [{ Origin: 'https://attacker.example' }, { Origin: '' }, {
-		Host: 'attacker.example:8087',
-	}];
+	const forbidden: Record<string, string>[] = [
+		{ Origin: 'https://attacker.example' },
+		{ Origin: '' },
+		{ Host: 'attacker.example:8087' },
+	];
 	for (const headers of forbidden) {
 		const response = await f.request('/status', { headers });
 		expect(response.status).toBe(403);

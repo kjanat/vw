@@ -26,11 +26,10 @@ test('Enpass CSV maps real login labels, repeated websites, TOTP, and sensitive 
 	});
 	expect(items(result)[1]).toMatchObject({
 		login: { username: 'alice', password: 'password', totp: 'totp-seed' },
-		fields: [{ name: 'E-mail', value: 'alice@example.com', type: 0 }, {
-			name: 'Security answer',
-			value: '42',
-			type: 1,
-		}],
+		fields: [
+			{ name: 'E-mail', value: 'alice@example.com', type: 0 },
+			{ name: 'Security answer', value: '42', type: 1 },
+		],
 	});
 });
 

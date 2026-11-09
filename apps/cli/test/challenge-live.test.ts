@@ -383,86 +383,92 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					const csvCases: { format: string; rows: string[][] }[] = [
 						{
 							format: 'chromecsv',
-							rows: [['name', 'url', 'username', 'password', 'note'], [
-								`${prefix} Chrome`,
-								'https://example.com/a,b',
-								'alice',
-								'  csv-secret  ',
-								'line1\nline2',
-							], ['', `android://hash@com.${prefix}.app/`, 'app-user', 'app-secret', '']],
+							rows: [
+								['name', 'url', 'username', 'password', 'note'],
+								[`${prefix} Chrome`, 'https://example.com/a,b', 'alice', '  csv-secret  ', 'line1\nline2'],
+								['', `android://hash@com.${prefix}.app/`, 'app-user', 'app-secret', ''],
+							],
 						},
 						{
 							format: 'firefoxcsv',
-							rows: [['url', 'username', 'password'], [
-								`https://www.${prefix}.example.com/login`,
-								'alice',
-								'csv-secret',
-							], ['chrome://FirefoxAccounts', 'internal', 'ignored']],
+							rows: [
+								['url', 'username', 'password'],
+								[`https://www.${prefix}.example.com/login`, 'alice', 'csv-secret'],
+								['chrome://FirefoxAccounts', 'internal', 'ignored'],
+							],
 						},
 						{
 							format: 'safaricsv',
-							rows: [['Title', 'Url', 'Username', 'Password', 'Notes', 'OTPAuth'], [
-								`${prefix} Safari`,
-								'https://example.com',
-								'alice',
-								'csv-secret',
-								'Safari notes',
-								'otpauth://totp/example?secret=JBSWY3DPEHPK3PXP',
-							]],
+							rows: [
+								['Title', 'Url', 'Username', 'Password', 'Notes', 'OTPAuth'],
+								[
+									`${prefix} Safari`,
+									'https://example.com',
+									'alice',
+									'csv-secret',
+									'Safari notes',
+									'otpauth://totp/example?secret=JBSWY3DPEHPK3PXP',
+								],
+							],
 						},
 						{
 							format: 'keepassxcsv',
-							rows: [['Group', 'Title', 'Username', 'Password', 'URL', 'Notes', 'TOTP'], [
-								`Root/${prefix} Folder`,
-								`${prefix} KeePass`,
-								'alice',
-								'csv-secret',
-								'https://example.com/a,b',
-								'KeePass notes',
-								'JBSWY3DPEHPK3PXP',
-							]],
+							rows: [
+								['Group', 'Title', 'Username', 'Password', 'URL', 'Notes', 'TOTP'],
+								[
+									`Root/${prefix} Folder`,
+									`${prefix} KeePass`,
+									'alice',
+									'csv-secret',
+									'https://example.com/a,b',
+									'KeePass notes',
+									'JBSWY3DPEHPK3PXP',
+								],
+							],
 						},
 						{
 							format: 'lastpasscsv',
-							rows: [['url', 'username', 'password', 'extra', 'name', 'grouping', 'fav', 'totp'], [
-								'https://example.com/a,b',
-								'alice',
-								'csv-secret',
-								'Site notes',
-								`${prefix} LastPass`,
-								`${prefix} Folder`,
-								'1',
-								'JBSWY3DPEHPK3PXP',
-							], [
-								'http://sn',
-								'',
-								'',
-								'NoteType:Credit Card\nNumber:4111111111111111\nName on Card:Alice\nSecurity Code:123\nExpiration Date:June,2030\nIssuer:Example\nNotes:card note\ncontinued:marker',
-								`${prefix} Card`,
-								`${prefix} Folder`,
-								'0',
-								'',
-							], [
-								'http://sn',
-								'',
-								'',
-								'NoteType:Address\nFirst Name:Alice\nLast Name:Example\nUnknown:marker',
-								`${prefix} Identity`,
-								'(none)',
-								'0',
-								'',
-							], ['http://sn', '', '', 'NoteType:Generic\nNotes:entire text', `${prefix} Note`, '(none)', '0', '']],
+							rows: [
+								['url', 'username', 'password', 'extra', 'name', 'grouping', 'fav', 'totp'],
+								[
+									'https://example.com/a,b',
+									'alice',
+									'csv-secret',
+									'Site notes',
+									`${prefix} LastPass`,
+									`${prefix} Folder`,
+									'1',
+									'JBSWY3DPEHPK3PXP',
+								],
+								[
+									'http://sn',
+									'',
+									'',
+									'NoteType:Credit Card\nNumber:4111111111111111\nName on Card:Alice\nSecurity Code:123\nExpiration Date:June,2030\nIssuer:Example\nNotes:card note\ncontinued:marker',
+									`${prefix} Card`,
+									`${prefix} Folder`,
+									'0',
+									'',
+								],
+								[
+									'http://sn',
+									'',
+									'',
+									'NoteType:Address\nFirst Name:Alice\nLast Name:Example\nUnknown:marker',
+									`${prefix} Identity`,
+									'(none)',
+									'0',
+									'',
+								],
+								['http://sn', '', '', 'NoteType:Generic\nNotes:entire text', `${prefix} Note`, '(none)', '0', ''],
+							],
 						},
 						{
 							format: 'lastpasscsv',
-							rows: [['profilename', 'profilelanguage', 'ccname', 'ccnum', 'cccsc', 'ccexp'], [
-								`${prefix} FormFill`,
-								'en',
-								'Alice',
-								'4111111111111111',
-								'123',
-								'2030-06',
-							]],
+							rows: [
+								['profilename', 'profilelanguage', 'ccname', 'ccnum', 'cccsc', 'ccexp'],
+								[`${prefix} FormFill`, 'en', 'Alice', '4111111111111111', '123', '2030-06'],
+							],
 						},
 					];
 					csvCases.push({
@@ -513,15 +519,18 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					});
 					csvCases.push({
 						format: 'passkeepcsv',
-						rows: [['title', 'username', 'password', 'site', 'description', 'password2', 'category'], [
-							`${prefix} PassKeep`,
-							'alice',
-							'  passkeep-secret  ',
-							'https://example.com/passkeep',
-							'PassKeep note',
-							'backup-secret',
-							`${prefix} PassKeep/Logins`,
-						]],
+						rows: [
+							['title', 'username', 'password', 'site', 'description', 'password2', 'category'],
+							[
+								`${prefix} PassKeep`,
+								'alice',
+								'  passkeep-secret  ',
+								'https://example.com/passkeep',
+								'PassKeep note',
+								'backup-secret',
+								`${prefix} PassKeep/Logins`,
+							],
+						],
 					});
 					csvCases.push({
 						format: 'passwordwallettxt',
@@ -536,16 +545,19 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					});
 					csvCases.push({
 						format: 'passpackcsv',
-						rows: [['Tags', 'Entry Name', 'User ID', 'Password', 'URL', 'Notes', 'Shared Notes', 'Extra Fields'], [
-							JSON.stringify({ tags: [JSON.stringify({ tag: `${prefix} Passpack folder` })] }),
-							`${prefix} Passpack login`,
-							'alice',
-							'  passpack-secret  ',
-							'https://example.com/passpack',
-							'Private note',
-							'Shared note',
-							JSON.stringify({ extraFields: [JSON.stringify({ name: 'Answer', data: 'custom value' })] }),
-						]],
+						rows: [
+							['Tags', 'Entry Name', 'User ID', 'Password', 'URL', 'Notes', 'Shared Notes', 'Extra Fields'],
+							[
+								JSON.stringify({ tags: [JSON.stringify({ tag: `${prefix} Passpack folder` })] }),
+								`${prefix} Passpack login`,
+								'alice',
+								'  passpack-secret  ',
+								'https://example.com/passpack',
+								'Private note',
+								'Shared note',
+								JSON.stringify({ extraFields: [JSON.stringify({ name: 'Answer', data: 'custom value' })] }),
+							],
+						],
 					});
 					csvCases.push({
 						format: 'ascendocsv',
@@ -579,13 +591,10 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					});
 					csvCases.push({
 						format: 'blurcsv',
-						rows: [['label', 'domain', 'email', 'username', 'password'], [
-							'null',
-							`https://www.${prefix}.blur.example/path`,
-							'',
-							'legacy user',
-							'  blur-secret  ',
-						]],
+						rows: [
+							['label', 'domain', 'email', 'username', 'password'],
+							['null', `https://www.${prefix}.blur.example/path`, '', 'legacy user', '  blur-secret  '],
+						],
 					});
 					csvCases.push({
 						format: 'codebookcsv',
@@ -617,12 +626,10 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					});
 					csvCases.push({
 						format: 'avastcsv',
-						rows: [['name', 'web', 'login', 'password'], [
-							`${prefix} Avast`,
-							'https://example.com/avast',
-							'alice',
-							'  avast-secret  ',
-						]],
+						rows: [
+							['name', 'web', 'login', 'password'],
+							[`${prefix} Avast`, 'https://example.com/avast', 'alice', '  avast-secret  '],
+						],
 					});
 					csvCases.push({
 						format: 'buttercupcsv',
@@ -666,41 +673,37 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					});
 					csvCases.push({
 						format: 'yoticsv',
-						rows: [['Name', 'User name', 'Password', 'URL'], [
-							`${prefix} Yoti`,
-							'alice',
-							'  yoti-secret  ',
-							'https://example.com/yoti',
-						]],
+						rows: [
+							['Name', 'User name', 'Password', 'URL'],
+							[`${prefix} Yoti`, 'alice', '  yoti-secret  ', 'https://example.com/yoti'],
+						],
 					});
 					csvCases.push({
 						format: 'saferpasscsv',
-						rows: [['url', 'notes', 'username', 'password'], [
-							`https://www.${prefix}.saferpass.example/login`,
-							'SaferPass note',
-							'alice',
-							'saferpass-secret',
-						]],
+						rows: [
+							['url', 'notes', 'username', 'password'],
+							[`https://www.${prefix}.saferpass.example/login`, 'SaferPass note', 'alice', 'saferpass-secret'],
+						],
 					});
 					csvCases.push({
 						format: 'securesafecsv',
-						rows: [['Title', 'Comment', 'Username', 'Password', 'Web URL'], [
-							`${prefix} SecureSafe`,
-							'SecureSafe note',
-							'alice',
-							'securesafe-secret',
-							'https://example.com/securesafe',
-						]],
+						rows: [
+							['Title', 'Comment', 'Username', 'Password', 'Web URL'],
+							[
+								`${prefix} SecureSafe`,
+								'SecureSafe note',
+								'alice',
+								'securesafe-secret',
+								'https://example.com/securesafe',
+							],
+						],
 					});
 					csvCases.push({
 						format: 'meldiumcsv',
-						rows: [['DisplayName', 'Notes', 'UserName', 'Password', 'Url'], [
-							`${prefix} Meldium`,
-							'Meldium note',
-							'alice',
-							'meldium-secret',
-							'https://example.com/meldium',
-						]],
+						rows: [
+							['DisplayName', 'Notes', 'UserName', 'Password', 'Url'],
+							[`${prefix} Meldium`, 'Meldium note', 'alice', 'meldium-secret', 'https://example.com/meldium'],
+						],
 					});
 					csvCases.push({
 						format: 'truekeycsv',
@@ -1282,13 +1285,10 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					});
 					csvCases.push({
 						format: 'mykicsv',
-						rows: [['nickname', 'status', 'tags', 'authToken', 'additionalInfo'], [
-							`${prefix} Myki 2FA`,
-							'active',
-							'personal',
-							'JBSWY3DPEHPK3PXP',
-							'Recovery note',
-						]],
+						rows: [
+							['nickname', 'status', 'tags', 'authToken', 'additionalInfo'],
+							[`${prefix} Myki 2FA`, 'active', 'personal', 'JBSWY3DPEHPK3PXP', 'Recovery note'],
+						],
 					});
 					for (const format of ['edgecsv', 'operacsv', 'vivaldicsv', 'bravecsv']) {
 						csvCases.push({ format, rows: csvCases.find(value => value.format === 'chromecsv')!.rows });
@@ -1296,23 +1296,18 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 					csvCases.push({ format: 'passboltcsv', rows: csvCases.find(value => value.format === 'lastpasscsv')!.rows });
 					csvCases.push({
 						format: 'arccsv',
-						rows: [['name', 'url', 'username', 'password', 'note'], [
-							'Ignored title',
-							`https://www.${prefix}.arc.example/a,b`,
-							' alice ',
-							'  arc-secret  ',
-							'line1\nline2',
-						]],
+						rows: [
+							['name', 'url', 'username', 'password', 'note'],
+							['Ignored title', `https://www.${prefix}.arc.example/a,b`, ' alice ', '  arc-secret  ', 'line1\nline2'],
+						],
 					});
 					csvCases.push({
 						format: 'aviracsv',
-						rows: [['name', 'website', 'username', 'secondary_username', 'password'], [
-							`${prefix} Avira`,
-							'example.com/a,b',
-							' alice ',
-							'alternate@example.com',
-							'  avira-secret  ',
-						], ['', `https://www.${prefix}.avira.example/path`, ' ', ' alternate ', 'secret']],
+						rows: [
+							['name', 'website', 'username', 'secondary_username', 'password'],
+							[`${prefix} Avira`, 'example.com/a,b', ' alice ', 'alternate@example.com', '  avira-secret  '],
+							['', `https://www.${prefix}.avira.example/path`, ' ', ' alternate ', 'secret'],
+						],
 					});
 					const nordPassRecords: Record<string, string>[] = [
 						{
@@ -1324,11 +1319,11 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 							additional_urls: JSON.stringify(['https://second.example', '']),
 							folder: `\\${prefix} NordPass\\Web`,
 							note: 'original notes',
-							custom_fields: JSON.stringify([{ label: 'Hidden', type: 'hidden', value: ' literal ' }, {
-								label: 'Long',
-								type: 'text',
-								value: 'x'.repeat(201),
-							}, { label: 'Multiline', type: 'text', value: 'line1\r\nline2' }]),
+							custom_fields: JSON.stringify([
+								{ label: 'Hidden', type: 'hidden', value: ' literal ' },
+								{ label: 'Long', type: 'text', value: 'x'.repeat(201) },
+								{ label: 'Multiline', type: 'text', value: 'line1\r\nline2' },
+							]),
 						},
 						{
 							type: 'credit_card',

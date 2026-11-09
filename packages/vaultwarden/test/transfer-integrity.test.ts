@@ -6,12 +6,10 @@ import { importVault, ImportFailure } from '#transfer';
 import { withImportSync } from '#test/import-server';
 
 const key = Buffer.alloc(64, 11);
-const entries: JsonObject[] = [{ id: 'old-first', type: 1, name: 'First', login: { password: 'synthetic-first' } }, {
-	id: 'old-second',
-	type: 1,
-	name: 'Second',
-	login: { password: 'synthetic-second' },
-}];
+const entries: JsonObject[] = [
+	{ id: 'old-first', type: 1, name: 'First', login: { password: 'synthetic-first' } },
+	{ id: 'old-second', type: 1, name: 'Second', login: { password: 'synthetic-second' } },
+];
 entries[0] = {
 	...entries[0]!,
 	login: {

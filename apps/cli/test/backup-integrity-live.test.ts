@@ -98,10 +98,11 @@ live('real Vaultwarden: backup integrity through CLI export and import', async (
 		const original = await vault!.getItem(String(item.id));
 		const firstAttachment = (original.attachments as JsonObject[])[0]!;
 		for (
-			const [name, contents] of [[String(firstAttachment.id), 'SECOND-BODY'], ['file.txt', 'THIRD-BODY'], [
-				'file_1.txt',
-				'FOURTH-BODY',
-			]]
+			const [name, contents] of [
+				[String(firstAttachment.id), 'SECOND-BODY'],
+				['file.txt', 'THIRD-BODY'],
+				['file_1.txt', 'FOURTH-BODY'],
+			]
 		) {
 			await vault!.createAttachment(String(item.id), name!, Buffer.from(contents!));
 			await refresh();
