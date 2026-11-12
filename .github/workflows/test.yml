@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
       - uses: kjanat/runner@97ed0af3ba6d6ac79cd2cb0782b6d762f15b8361 # v0
       - name: Install completion test shells
         run: sudo apt-get update && sudo apt-get install --no-install-recommends --yes fish zsh; command -v pwsh python3
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - name: Install tools from mise.toml
-        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
       - run: bun install --frozen-lockfile --ignore-scripts
       - name: Discover stable server and CLI releases
         id: matrix
@@ -75,7 +75,7 @@ jobs:
             with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
           - uses: kjanat/runner@97ed0af3ba6d6ac79cd2cb0782b6d762f15b8361 # v0
           - uses: kjanat/envctl@7b9381f7baa018e51298113f7386b1177cb0a0e1 # v0
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
       - name: Install independent reference CLI
         run: run bunx npm@12 install --prefix "${RUNNER_TEMP}/reference-cli" --no-audit --no-fund --ignore-scripts --min-release-age-exclude '@bitwarden/cli'
           "@bitwarden/cli@${REFERENCE_VERSION}"
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: "${{ inputs.ref || github.sha }}", persist-credentials: false }
       - parallel:
-          - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+          - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
           - uses: kjanat/runner@97ed0af3ba6d6ac79cd2cb0782b6d762f15b8361 # v0
           - uses: kjanat/envctl@7b9381f7baa018e51298113f7386b1177cb0a0e1 # v0
       - run: runner install --no-tools --frozen
