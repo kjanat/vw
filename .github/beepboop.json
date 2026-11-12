@@ -1,0 +1,55 @@
+{
+  "$schema": "https://beepboop.kjanat.dev/schema/v1.json",
+  "streams": {
+    "main": {
+      "packages": [
+        "pkg:npm/%40kjanat/vaultwarden-cli",
+        "pkg:npm/%40kjanat/vaultwarden"
+      ],
+      "versionScope": "one-for-stream",
+      "mustPublish": [
+        "pkg:npm/%40kjanat/vaultwarden-cli",
+        "pkg:npm/%40kjanat/vaultwarden"
+      ],
+      "prepare": {
+        "strategy": "managed",
+        "workflow": {
+          "setup": {
+            "job": "prepare",
+            "commands": "(cd 'apps/cli' &&\nbun install\nnpm run test --if-present\n)\n(cd 'packages/vaultwarden' &&\nbun install\nnpm run test --if-present\n)"
+          },
+          "file": "release-vw.yml",
+          "ref": "master",
+          "inputs": {
+            "beepboop_operation": "prepare"
+          }
+        }
+      },
+      "promote": {
+        "publishWhen": "version-commit-pushed",
+        "workflow": {
+          "setup": {
+            "job": "publish",
+            "commands": "beepboop publish",
+            "tagPrefix": "v"
+          },
+          "file": "release-vw.yml",
+          "ref": "master",
+          "publications": [
+            "pkg:npm/%40kjanat/vaultwarden-cli",
+            "pkg:npm/%40kjanat/vaultwarden",
+            "github-release:kjanat/vw"
+          ],
+          "refs": {
+            "phase": "version",
+            "prefix": "v"
+          },
+          "inputs": {
+            "beepboop_operation": "publish"
+          }
+        }
+      }
+    }
+  },
+  "managers": ["github-release", "npm", "workflow"]
+}

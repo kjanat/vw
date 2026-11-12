@@ -1,0 +1,90 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      beepboop_execution_id:
+        description: Beepboop execution
+        required: true
+        type: string
+      beepboop_title:
+        description: Beepboop run title
+        required: false
+        type: string
+      beepboop_operation:
+        description: Release step
+        type: choice
+        options:
+          - prepare
+          - publish
+        default: publish
+        required: true
+jobs:
+  prepare:
+    runs-on: ubuntu-26.04
+    steps:
+      [
+        {
+            uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, # v7.0.1
+            with: { persist-credentials: false }
+          },
+        { uses: kjanat/beepboop/actions/begin@v1, id: beepboop, with: { execution-id: "${{ inputs.beepboop_execution_id }}", stream: main, operation: prepare } },
+        {
+            uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, # v7.0.1
+            with: { ref: "${{ fromJSON(steps.beepboop.outputs.context).sourceSha }}", persist-credentials: false }
+          },
+        { uses: kjanat/beepboop/actions/prepare@v1, with: { mode: apply, context: "${{ steps.beepboop.outputs.context }}" } },
+        {
+            uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+          },
+        {
+            name: Prepare and validate,
+            run: "(cd 'apps/cli' &&
+
+              bun install
+
+              npm run test --if-present
+
+              )
+
+              (cd 'packages/vaultwarden' &&
+
+              bun install
+
+              npm run test --if-present
+
+              )\n"
+          },
+        { uses: kjanat/beepboop/actions/prepare@v1, with: { mode: submit, context: "${{ steps.beepboop.outputs.context }}" } }
+      ]
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 120
+    if: ${{ inputs.beepboop_operation == 'prepare' }}
+  publish:
+    runs-on: ubuntu-26.04
+    steps:
+      [
+        {
+            uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, # v7.0.1
+            with: { persist-credentials: false }
+          },
+        { uses: kjanat/beepboop/actions/begin@v1, id: beepboop, with: { execution-id: "${{ inputs.beepboop_execution_id }}", stream: main, operation: promote } },
+        {
+            uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, # v7.0.1
+            with: { ref: "${{ fromJSON(steps.beepboop.outputs.context).sourceSha }}", persist-credentials: false }
+          },
+        {
+            uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+          },
+        { id: beepboop_publish, name: Publish selected packages, uses: kjanat/beepboop/actions/publish@v1, with: { execution-id: "${{ steps.beepboop.outputs.execution-id }}" } },
+        { id: beepboop_token, uses: kjanat/beepboop/actions/token@v1, with: { execution-id: "${{ steps.beepboop.outputs.execution-id }}", permission-contents: write } },
+        { id: beepboop_refs, uses: kjanat/beepboop/actions/publish-refs@v1, env: { "${{ insert }}": "${{ fromJSON(steps.beepboop_token.outputs.gitId || '{}') }}" }, with: { token: "${{ steps.beepboop_token.outputs.token }}" } },
+        { uses: kjanat/beepboop/actions/publish-release@v1, with: { execution-id: "${{ steps.beepboop.outputs.execution-id }}" } }
+      ]
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 150
+    if: ${{ inputs.beepboop_operation == 'publish' }}
+run-name: ${{ inputs.beepboop_title || github.workflow }}
