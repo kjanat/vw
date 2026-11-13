@@ -14,7 +14,7 @@
 		"parse5": "8.1.1",
 		"parse5-sax-parser": "8.0.1",
 		"tldts": "7.4.19",
-		"tldts-core": "7.4.20",
+		"tldts-core": "7.5.2",
 		"tldts-experimental": "7.4.19"
 	}
 }
