@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 [dependencies]
 html5ever = { version = "=0.40.1", optional = true }
 markup5ever_rcdom = { version = "=0.40.1", optional = true }
-psl = { version = "=2.1.248", optional = true }
+psl = { version = "=2.1.254", optional = true }
 wit-bindgen = "=0.63.0"
 
 [features]
