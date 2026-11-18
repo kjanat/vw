@@ -23,10 +23,11 @@
 					"inputs": {
 						"beepboop_operation": "prepare"
 					}
-				}
+				},
+				"versionPrMerge": "squash"
 			},
 			"promote": {
-				"publishWhen": "version-commit-pushed",
+				"publishWhen": "version-pr-merged",
 				"workflow": {
 					"setup": {
 						"job": "publish",

@@ -35,7 +35,11 @@ files = ["**/AGENTS.md", "**/CLAUDE.md", "**/CHANGELOG.md", "**/CONTRIBUTING.md"
 textWrap = "never"
 
 [yaml]
-printWidth = 160
+printWidth = 80
+
+[yaml.overrides]
+files = ["**/action.y*ml", ".github/workflows/*.y*ml"]
+printWidth = 150
 
 [sortPackageJson]
 associations = ["package.json"]
