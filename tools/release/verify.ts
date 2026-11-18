@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { runDirect, inDirectory, repoRoot } from '../runtime.mjs';
+import { inDirectory, repoRoot, runDirect } from '../runtime.mjs';
 import { runConsumerSmoke } from './smoke.mjs';
 
 export function publishedOptionalDependency(metadataUrl: string, repositoryUrl: string) {
@@ -46,12 +46,16 @@ export async function verifyRelease(runtime: 'node' | 'bun', previewMetadataPath
 		await mkdir(consumerRoot, { recursive: true });
 		for (const { label, dependency, cli: installation, options } of consumers) {
 			const consumer = await mkdtemp(resolve(consumerRoot, `vw-${label}-consumer-`));
+			const dependencies: Record<string, string> = { [dependency.name]: dependency.source };
+			// The CLI peer-depends on the SDK. Install that SDK in the direct consumer
+			// so the peer is the archive under test.
+			if (dependency === cli) dependencies[sdk.name] = sdk.source;
 			await writeFile(
 				resolve(consumer, 'package.json'),
 				JSON.stringify({
 					private: true,
 					type: 'module',
-					dependencies: { [dependency.name]: dependency.source },
+					dependencies,
 					// Same-version registry packages can otherwise satisfy the dependencies between
 					// the SDK and CLI independently of the archives. Test the packed packages everywhere.
 					...(!metadata ? { overrides: { [sdk.name]: sdk.source, [cli.name]: cli.source } } : {}),
