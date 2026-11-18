@@ -55,7 +55,7 @@ export function createScoringHost(onCall?: (name: string) => void): ImportObject
 			}),
 		},
 		'wasi:cli/environment@0.2.12': { getEnvironment: call('environment.empty', () => []) },
-		'wasi:cli/exit@0.2.12': { exit: deny('exit') },
+		'wasi:cli/exit@0.2.12': { exit: deny('exit'), exitWithCode: deny('exitWithCode') },
 		'wasi:cli/stdin@0.2.12': { getStdin: deny('stdin') },
 		'wasi:cli/stdout@0.2.12': { getStdout: deny('stdout') },
 		'wasi:cli/stderr@0.2.12': { getStderr: deny('stderr') },
