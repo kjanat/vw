@@ -2453,7 +2453,8 @@ test('authentication checks ignore unused password files and do not prompt', asy
 
 for (const shell of ['zsh', 'bash', 'fish', 'powershell']) {
 	// A cold PowerShell/.NET start can exceed Bun's default five-second test budget on CI.
-	const shellTest = shell === 'fish' && !Bun.which(shell) ? test.skip : test;
+	const executable = shell === 'powershell' ? 'pwsh' : shell;
+	const shellTest = Bun.which(executable) ? test : test.skip;
 	shellTest(
 		`schema-derived ${shell} completion parses`,
 		{ timeout: shell === 'powershell' ? 30000 : 5000 },
