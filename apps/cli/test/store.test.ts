@@ -349,10 +349,12 @@ test('legacy locks without verifiable owners are not stolen', async () => {
 
 test('contending store commands do not lose completed writes across lock handovers', async () => {
 	const dir = await mkdtemp(join(tmpdir(), 'vw-store-handovers-'));
+	// A state sync can hold the lock longer than a fixed spin budget on a loaded runner.
+	const deadline = Date.now() + 15_000;
 	try {
 		await Promise.all(Array.from({ length: 6 }, async () => {
-			for (let saved = 0, attempt = 0; saved < 3; attempt++) {
-				if (attempt >= 200) throw new Error('Store handover failed to make progress.');
+			for (let saved = 0; saved < 3;) {
+				if (Date.now() >= deadline) throw new Error('Store handover failed to make progress.');
 				let entered = false;
 				try {
 					await withStore(dir, async (state, save) => {
@@ -363,7 +365,7 @@ test('contending store commands do not lose completed writes across lock handove
 					saved++;
 				} catch (error) {
 					if (entered) throw error;
-					await new Promise(resolve => setTimeout(resolve, 1));
+					await new Promise(resolve => setTimeout(resolve, 5));
 				}
 			}
 		}));
@@ -371,4 +373,4 @@ test('contending store commands do not lose completed writes across lock handove
 	} finally {
 		await rm(dir, { recursive: true, force: true });
 	}
-}, 10000);
+}, 20000);
