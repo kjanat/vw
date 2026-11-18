@@ -1,6 +1,7 @@
 {
 	"name": "@kjanat/vaultwarden-cli",
 	"version": "0.1.4",
+	"description": "An independent command-line client for Vaultwarden.",
 	"keywords": [
 		"vaultwarden",
 		"bitwarden",
