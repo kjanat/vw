@@ -12,12 +12,12 @@ crate-type = ["cdylib"]
 wit-bindgen = "=0.63.0"
 zxcvbn = { version = "=3.1.1", default-features = false }
 
-[patch.crates-io]
-zxcvbn = { path = "vendor/zxcvbn" }
-
 [profile.release]
 opt-level = "z"
 strip = true
 lto = true
 panic = "abort"
 codegen-units = 1
+
+[patch.crates-io]
+zxcvbn = { path = "vendor/zxcvbn" }
