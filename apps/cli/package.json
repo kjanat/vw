@@ -47,13 +47,13 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@kjanat/dreamcli": "catalog:",
-		"@kjanat/vaultwarden": "workspace:*"
+		"@kjanat/dreamcli": "catalog:"
 	},
 	"devDependencies": {
 		"@babel/eslint-parser": "catalog:",
 		"@babel/preset-typescript": "catalog:",
 		"@eslint/js": "catalog:",
+		"@kjanat/vaultwarden": "workspace:*",
 		"@types/bun": "catalog:",
 		"@vw/typescript-config": "workspace:*",
 		"eslint": "catalog:",
@@ -61,6 +61,9 @@
 		"micro509": "catalog:",
 		"tsdown": "catalog:",
 		"typescript": "catalog:"
+	},
+	"peerDependencies": {
+		"@kjanat/vaultwarden": "workspace:*"
 	},
 	"engines": {
 		"node": ">=24.8.0"

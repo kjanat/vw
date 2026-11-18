@@ -24,9 +24,9 @@ preserving the pull-request event so the publisher can comment on the PR. It
 reuses that run's build artifacts and verifies their archive checksums. The
 built packages are extracted into temporary directories, then the locked
 `pkg-pr-new` command repacks them with matching preview dependency URLs,
-including the SDK's optional CLI. The consumers install the publisher's URLs
-without overrides, and the SDK consumers resolve the CLI through that rewritten
-optional dependency. Source checks are not repeated for previews. The pkg.pr.new
+including the SDK's optional CLI. The CLI peer-depends on the SDK, so an
+optional installation uses the consumer's SDK. A direct CLI consumer also
+installs that SDK. The consumers install the publisher's URLs without overrides. Source checks are not repeated for previews. The pkg.pr.new
 GitHub App must be installed on this repository before publication.
 
 Release operations use `bun run repo release`. The workflows call `draft prepare`,
