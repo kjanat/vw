@@ -11,7 +11,7 @@ rust = { version = "1.100.0", profile = "minimal", targets = ["wasm32-wasip2", "
 "github:wasm-bindgen/wasm-bindgen" = "0.2.130"
 "github:kjanat/kprint" = "0.64.0"
 "github:kjanat/envctl" = "0.7.2"
-"npm:@bitwarden/cli" = "2026.10.1"
+"npm:@bitwarden/cli" = "2026.11.0"
 
 [tools."github:WebAssembly/binaryen"]
 version = "133"
