@@ -629,160 +629,11 @@ for (
 				await checked(['delete', 'org-collection', collection.id, '--organizationid', organization.id]);
 				const members = JSON.parse(await checked(['list', 'org-members', '--organizationid', organization.id]));
 				expect(members.some((m: { email: string }) => m.email === email)).toBe(true);
-				// Register a second real account, invite it, and verify confirmation wraps the org key for that account.
-				const memberEmail = `member-${randomUUID()}@example.com`;
-				const memberKey = randomBytes(64);
-				const memberMaster = await deriveMasterKey(password, memberEmail, { type: 0, iterations: 600000 });
-				const memberStretch = stretchKey(memberMaster);
-				const memberHash = await masterPasswordHash(memberMaster, password);
-				const memberRsa = generateKeyPairSync('rsa', {
-					modulusLength: 2048,
-					publicKeyEncoding: { type: 'spki', format: 'der' },
-					privateKeyEncoding: { type: 'pkcs8', format: 'der' },
-				});
-				try {
-					const verifyMember = await post('/identity/accounts/register/send-verification-email', {
-						email: memberEmail,
-						name: 'Member fixture',
-					});
-					expect(verifyMember.status).toBe(200);
-					const memberRegistered = await post('/identity/accounts/register/finish', {
-						email: memberEmail,
-						masterPasswordHash: memberHash,
-						key: encrypt(memberKey, memberStretch),
-						kdf: 0,
-						kdfIterations: 600000,
-						emailVerificationToken: await registrationVerificationToken(verifyMember),
-						keys: {
-							publicKey: memberRsa.publicKey.toString('base64'),
-							encryptedPrivateKey: encrypt(memberRsa.privateKey, memberKey),
-						},
-					});
-					expect(memberRegistered.status).toBe(200);
-					const invited = await post(`/api/organizations/${organization.id}/users/invite`, {
-						emails: [memberEmail],
-						type: 2,
-						groups: [],
-						collections: [{ id: collections[0].id, readOnly: false, hidePasswords: false, manage: false }],
-					}, auth.access_token);
-					expect(invited.status).toBe(200);
-					const pending = JSON.parse(await checked(['list', 'org-members', '--organizationid', organization.id])).find((
-						m: { email: string },
-					) => m.email === memberEmail);
-					expect(pending.status).toBe(1);
-					await checked(['confirm', 'org-member', pending.id, '--organizationid', organization.id]);
-					const confirmed = JSON.parse(await checked(['list', 'org-members', '--organizationid', organization.id]))
-						.find((m: { email: string }) => m.email === memberEmail);
-					expect(confirmed.status).toBe(2);
-					const memberLogin = await fetch(`${server}/identity/connect/token`, {
-						method: 'POST',
-						body: new URLSearchParams({
-							grant_type: 'password',
-							client_id: 'cli',
-							scope: 'api offline_access',
-							username: memberEmail,
-							password: memberHash,
-							deviceIdentifier: randomUUID(),
-							deviceName: 'Member fixture',
-							deviceType: '8',
-						}),
-					});
-					expect(memberLogin.status).toBe(200);
-					const memberAuth = await memberLogin.json() as { access_token: string };
-					const memberCliDir = join(dir, 'member-cli');
-					expect(
-						(await run(['config', 'server', tlsServer], undefined, password, undefined, undefined, memberCliDir)).code,
-					)
-						.toBe(0);
-					const memberCliLogin = await run(
-						['login', memberEmail, '--raw'],
-						undefined,
-						password,
-						undefined,
-						undefined,
-						memberCliDir,
-					);
-					if (memberCliLogin.code) throw new Error(`Member CLI login failed: ${memberCliLogin.stderr}`);
-					const memberSession = memberCliLogin.stdout.trim();
-					const sharedAttachmentItem = JSON.parse(
-						await checked([
-							'create',
-							'item',
-							encode({
-								type: 1,
-								name: `Shared attachment ID fixture ${randomUUID()}`,
-								organizationId: organization.id,
-								collectionIds: [collections[0].id],
-								login: { username: 'shared-attachment-fixture' },
-							}),
-						]),
-					);
-					const sharedExpectedBytes = Buffer.from('owner attachment selected by its explicit ID');
-					const sharedSubstituteBytes = Buffer.from('member attachment whose filename collides with that ID');
-					const sharedExpectedPath = join(dir, 'shared-attachment-owner.bin');
-					await writeFile(sharedExpectedPath, sharedExpectedBytes, { mode: 0o600 });
-					const sharedAttachment = JSON.parse(
-						await checked([
-							'create',
-							'attachment',
-							'--file',
-							sharedExpectedPath,
-							'--itemid',
-							sharedAttachmentItem.id,
-						]),
-					);
-					const sharedAttachmentId = sharedAttachment.attachments[0].id as string;
-					const memberSharedSync = await run(
-						['sync', '--force'],
-						memberSession,
-						password,
-						undefined,
-						undefined,
-						memberCliDir,
-					);
-					if (memberSharedSync.code) throw new Error(`Member shared-item sync failed: ${memberSharedSync.stderr}`);
-					const sharedSubstitutePath = join(dir, sharedAttachmentId);
-					await writeFile(sharedSubstitutePath, sharedSubstituteBytes, { mode: 0o600 });
-					const memberSharedAttachment = await run(
-						[
-							'create',
-							'attachment',
-							'--file',
-							sharedSubstitutePath,
-							'--itemid',
-							sharedAttachmentItem.id,
-						],
-						memberSession,
-						password,
-						undefined,
-						undefined,
-						memberCliDir,
-					);
-					if (memberSharedAttachment.code) {
-						throw new Error(`Member could not add the shared attachment collision: ${memberSharedAttachment.stderr}`);
-					}
-					const memberAttachmentRows = JSON.parse(memberSharedAttachment.stdout).attachments as {
-						id: string;
-						fileName: string;
-					}[];
-					const memberSubstitute = memberAttachmentRows.find(row => row.fileName === sharedAttachmentId);
-					expect(memberSubstitute).toBeDefined();
-					expect(memberSubstitute!.id).not.toBe(sharedAttachmentId);
-					expect(memberAttachmentRows.some(row => row.id === sharedAttachmentId)).toBe(true);
-					await checked(['sync', '--force']);
-					const ownerSharedDownload = join(dir, 'shared-attachment-by-id.bin');
-					await checked([
-						'get',
-						'attachment',
-						sharedAttachmentId,
-						'--itemid',
-						sharedAttachmentItem.id,
-						'--output',
-						ownerSharedDownload,
-					]);
-					expect(await readFile(ownerSharedDownload)).toEqual(sharedExpectedBytes);
-					await checked(['delete', 'item', sharedAttachmentItem.id, '--permanent']);
-					await checked(['sync']);
+				// bw 2026.11.0 cannot deserialize a 1.37.4 organization policy without a revision date.
+				// Exercise the reference comparisons before creating the policy, then verify the upstream error.
+				const deferPolicy = serverVersion === '1.37.4' && process.env.VW_TEST_BW_VERSION === '2026.11.0'
+					&& process.env.VW_TEST_POLICY_REDACTION_ONLY !== '1';
+				async function checkItemTypePolicy(memberSession: string, memberCliDir: string) {
 					const policyMarker = Buffer.from(`restricted-policy-attachment-${randomUUID()}`);
 					const restrictedLoginName = `Policy restricted fixture login ${randomUUID()}`;
 					const restrictedLoginResult = await run(
@@ -959,6 +810,163 @@ for (
 					const zipData = JSON.parse(Buffer.from(zipEntries['data.json']!).toString('utf8'));
 					expect(zipData.items.some((value: { id: string }) => value.id === restrictedCard.id)).toBe(false);
 					expect(Object.values(zipEntries).some(contents => Buffer.from(contents).includes(policyMarker))).toBe(false);
+				}
+				// Register a second real account, invite it, and verify confirmation wraps the org key for that account.
+				const memberEmail = `member-${randomUUID()}@example.com`;
+				const memberCliDir = join(dir, 'member-cli');
+				let memberSession: string;
+				const memberKey = randomBytes(64);
+				const memberMaster = await deriveMasterKey(password, memberEmail, { type: 0, iterations: 600000 });
+				const memberStretch = stretchKey(memberMaster);
+				const memberHash = await masterPasswordHash(memberMaster, password);
+				const memberRsa = generateKeyPairSync('rsa', {
+					modulusLength: 2048,
+					publicKeyEncoding: { type: 'spki', format: 'der' },
+					privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+				});
+				try {
+					const verifyMember = await post('/identity/accounts/register/send-verification-email', {
+						email: memberEmail,
+						name: 'Member fixture',
+					});
+					expect(verifyMember.status).toBe(200);
+					const memberRegistered = await post('/identity/accounts/register/finish', {
+						email: memberEmail,
+						masterPasswordHash: memberHash,
+						key: encrypt(memberKey, memberStretch),
+						kdf: 0,
+						kdfIterations: 600000,
+						emailVerificationToken: await registrationVerificationToken(verifyMember),
+						keys: {
+							publicKey: memberRsa.publicKey.toString('base64'),
+							encryptedPrivateKey: encrypt(memberRsa.privateKey, memberKey),
+						},
+					});
+					expect(memberRegistered.status).toBe(200);
+					const invited = await post(`/api/organizations/${organization.id}/users/invite`, {
+						emails: [memberEmail],
+						type: 2,
+						groups: [],
+						collections: [{ id: collections[0].id, readOnly: false, hidePasswords: false, manage: false }],
+					}, auth.access_token);
+					expect(invited.status).toBe(200);
+					const pending = JSON.parse(await checked(['list', 'org-members', '--organizationid', organization.id])).find((
+						m: { email: string },
+					) => m.email === memberEmail);
+					expect(pending.status).toBe(1);
+					await checked(['confirm', 'org-member', pending.id, '--organizationid', organization.id]);
+					const confirmed = JSON.parse(await checked(['list', 'org-members', '--organizationid', organization.id]))
+						.find((m: { email: string }) => m.email === memberEmail);
+					expect(confirmed.status).toBe(2);
+					const memberLogin = await fetch(`${server}/identity/connect/token`, {
+						method: 'POST',
+						body: new URLSearchParams({
+							grant_type: 'password',
+							client_id: 'cli',
+							scope: 'api offline_access',
+							username: memberEmail,
+							password: memberHash,
+							deviceIdentifier: randomUUID(),
+							deviceName: 'Member fixture',
+							deviceType: '8',
+						}),
+					});
+					expect(memberLogin.status).toBe(200);
+					const memberAuth = await memberLogin.json() as { access_token: string };
+					expect(
+						(await run(['config', 'server', tlsServer], undefined, password, undefined, undefined, memberCliDir)).code,
+					)
+						.toBe(0);
+					const memberCliLogin = await run(
+						['login', memberEmail, '--raw'],
+						undefined,
+						password,
+						undefined,
+						undefined,
+						memberCliDir,
+					);
+					if (memberCliLogin.code) throw new Error(`Member CLI login failed: ${memberCliLogin.stderr}`);
+					memberSession = memberCliLogin.stdout.trim();
+					const sharedAttachmentItem = JSON.parse(
+						await checked([
+							'create',
+							'item',
+							encode({
+								type: 1,
+								name: `Shared attachment ID fixture ${randomUUID()}`,
+								organizationId: organization.id,
+								collectionIds: [collections[0].id],
+								login: { username: 'shared-attachment-fixture' },
+							}),
+						]),
+					);
+					const sharedExpectedBytes = Buffer.from('owner attachment selected by its explicit ID');
+					const sharedSubstituteBytes = Buffer.from('member attachment whose filename collides with that ID');
+					const sharedExpectedPath = join(dir, 'shared-attachment-owner.bin');
+					await writeFile(sharedExpectedPath, sharedExpectedBytes, { mode: 0o600 });
+					const sharedAttachment = JSON.parse(
+						await checked([
+							'create',
+							'attachment',
+							'--file',
+							sharedExpectedPath,
+							'--itemid',
+							sharedAttachmentItem.id,
+						]),
+					);
+					const sharedAttachmentId = sharedAttachment.attachments[0].id as string;
+					const memberSharedSync = await run(
+						['sync', '--force'],
+						memberSession,
+						password,
+						undefined,
+						undefined,
+						memberCliDir,
+					);
+					if (memberSharedSync.code) throw new Error(`Member shared-item sync failed: ${memberSharedSync.stderr}`);
+					const sharedSubstitutePath = join(dir, sharedAttachmentId);
+					await writeFile(sharedSubstitutePath, sharedSubstituteBytes, { mode: 0o600 });
+					const memberSharedAttachment = await run(
+						[
+							'create',
+							'attachment',
+							'--file',
+							sharedSubstitutePath,
+							'--itemid',
+							sharedAttachmentItem.id,
+						],
+						memberSession,
+						password,
+						undefined,
+						undefined,
+						memberCliDir,
+					);
+					if (memberSharedAttachment.code) {
+						throw new Error(`Member could not add the shared attachment collision: ${memberSharedAttachment.stderr}`);
+					}
+					const memberAttachmentRows = JSON.parse(memberSharedAttachment.stdout).attachments as {
+						id: string;
+						fileName: string;
+					}[];
+					const memberSubstitute = memberAttachmentRows.find(row => row.fileName === sharedAttachmentId);
+					expect(memberSubstitute).toBeDefined();
+					expect(memberSubstitute!.id).not.toBe(sharedAttachmentId);
+					expect(memberAttachmentRows.some(row => row.id === sharedAttachmentId)).toBe(true);
+					await checked(['sync', '--force']);
+					const ownerSharedDownload = join(dir, 'shared-attachment-by-id.bin');
+					await checked([
+						'get',
+						'attachment',
+						sharedAttachmentId,
+						'--itemid',
+						sharedAttachmentItem.id,
+						'--output',
+						ownerSharedDownload,
+					]);
+					expect(await readFile(ownerSharedDownload)).toEqual(sharedExpectedBytes);
+					await checked(['delete', 'item', sharedAttachmentItem.id, '--permanent']);
+					await checked(['sync']);
+					if (!deferPolicy) await checkItemTypePolicy(memberSession, memberCliDir);
 					const memberImportName = `Member import into existing collection ${randomUUID()}`;
 					const memberImportPath = join(dir, 'member-existing-collection-import.json');
 					await writeFile(
@@ -2089,6 +2097,15 @@ for (
 					expect((await official(['get', 'password', item.id], referenceApiUnlock.stdout.trim())).stdout.trim()).toBe(
 						'fixture-secret',
 					);
+					if (deferPolicy) {
+						await checkItemTypePolicy(memberSession, memberCliDir);
+						const token = referenceApiUnlock.stdout.trim();
+						expect((await official(['sync', '--force'], token)).code).toBe(0);
+						const read = await official(['get', 'item', item.id], token);
+						expect(read.code).toBe(1);
+						expect(read.stderr).toContain('Error: Null policy revision date.');
+						expect(read.stderr).toContain('PolicyRecordMapper.fromSdk');
+					}
 				}
 				expect(
 					(
