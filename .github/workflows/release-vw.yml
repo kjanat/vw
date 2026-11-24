@@ -66,11 +66,16 @@ jobs:
           with: { ref: "${{ fromJSON(steps.beepboop.outputs.context).sourceSha }}", persist-credentials: false },
         },
         { uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a }, # v5.2.10
+        { name: Install locked dependencies, run: bun install --frozen-lockfile },
+        { name: Build SDK and CLI, run: bun run build },
+        { name: Pack SDK, run: bun run repo release pack vaultwarden },
+        { name: Pack CLI, run: bun run repo release pack cli },
+        { name: Test isolated installations, run: bun run repo release verify },
         {
           id: beepboop_publish,
           name: Publish selected packages,
           uses: kjanat/beepboop/actions/publish@v1,
-          with: { execution-id: "${{ steps.beepboop.outputs.execution-id }}" },
+          with: { execution-id: "${{ steps.beepboop.outputs.execution-id }}", npm-tarballs: artifacts },
         },
         {
           id: beepboop_token,
