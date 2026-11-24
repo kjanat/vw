@@ -13,6 +13,7 @@ defaults: { run: { shell: "bash -euo pipefail {0}" } }
 env: { GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}" }
 jobs:
   draft:
+    if: github.event_name == 'workflow_dispatch' || github.actor != 'beepboop-by-kjanat[bot]'
     name: Prepare GitHub draft
     runs-on: ubuntu-26.04
     timeout-minutes: 5
