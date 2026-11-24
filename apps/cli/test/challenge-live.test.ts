@@ -200,19 +200,12 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 		expect(login.code).toBe(0);
 		expect(login.stdout.trim()).not.toBe('');
 		expect(login.stderr.includes(password)).toBe(false);
-		const portProbe = createServer();
-		await new Promise<void>(resolve => portProbe.listen(0, '127.0.0.1', resolve));
-		const address = portProbe.address();
-		if (!address || typeof address === 'string') throw new Error('Could not reserve a local API port.');
-		const servePort = address.port;
-		await new Promise<void>((resolve, reject) => portProbe.close(error => error ? reject(error) : resolve()));
+		const socket = join(dir, 'serve.sock');
 		const serving = spawn('node', [
 			executable,
 			'serve',
 			'--hostname',
-			'127.0.0.1',
-			'--port',
-			String(servePort),
+			`unix://${socket}`,
 			'--session',
 			login.stdout.trim(),
 		], {
@@ -220,22 +213,23 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 			env: { PATH: process.env.PATH, VW_APPDATA_DIR: dir },
 			stdio: ['ignore', 'ignore', 'pipe'],
 		});
-		const ready = Promise.withResolvers<string>();
+		const ready = Promise.withResolvers<void>();
 		let diagnostic = '';
 		serving.stderr?.setEncoding('utf8');
 		serving.stderr?.on('data', (part: string) => {
 			diagnostic += part;
-			const address = diagnostic.match(/Listening on (http:\/\/127\.0\.0\.1:\d+)/);
-			if (address) ready.resolve(address[1]!);
+			if (diagnostic.includes(`Listening on unix://${socket}`)) ready.resolve();
 		});
 		serving.once('error', error => ready.reject(error));
 		serving.once('exit', () => ready.reject(new Error(`Local API exited before listening. ${diagnostic}`)));
 		const deadline = setTimeout(() => ready.reject(new Error('Local API did not start.')), 5000);
 		try {
-			const base = await ready.promise;
+			await ready.promise;
 			clearTimeout(deadline);
+			const localRequest = (path: string, init: RequestInit = {}) =>
+				fetch(`http://localhost:8087${path}`, { ...init, unix: socket });
 			const call = (path: string, method = 'GET', body?: unknown) =>
-				fetch(`${base}${path}`, {
+				localRequest(path, {
 					method,
 					headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
 					body: body === undefined ? undefined : JSON.stringify(body),
@@ -245,8 +239,8 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 				success: true,
 				data: { object: 'template', template: { status: 'unlocked' } },
 			});
-			expect((await fetch(`${base}/status`, { headers: { Origin: '' } })).status).toBe(403);
-			expect((await fetch(`${base}/status`, { headers: { Host: 'attacker.example' } })).status).toBe(403);
+			expect((await localRequest('/status', { headers: { Origin: '' } })).status).toBe(403);
+			expect((await localRequest('/status', { headers: { Host: 'attacker.example' } })).status).toBe(403);
 			const folder = await (await call('/object/folder', 'POST', { name: 'REST folder' })).json();
 			expect(folder.success).toBe(true);
 			const folderId = folder.data.id;
@@ -269,7 +263,7 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 			});
 			const bytes = new Uint8Array(262144).fill(171), form = new FormData();
 			form.set('file', new Blob([bytes]), 'REST binary.bin');
-			const uploaded = await (await fetch(`${base}/attachment?itemid=${itemId}`, { method: 'POST', body: form }))
+			const uploaded = await (await localRequest(`/attachment?itemid=${itemId}`, { method: 'POST', body: form }))
 				.json();
 			expect(uploaded.success).toBe(true);
 			const attachmentId = uploaded.data.attachments[0].id;
@@ -2096,7 +2090,7 @@ live('real Vaultwarden: authentication, external imports, and REST compatibility
 								method: 'POST',
 								body: makeForm(),
 							});
-							const ownUpload = await fetch(`${base}/attachment?itemid=${itemId}`, {
+							const ownUpload = await localRequest(`/attachment?itemid=${itemId}`, {
 								method: 'POST',
 								body: makeForm(),
 								signal: AbortSignal.timeout(10000),
