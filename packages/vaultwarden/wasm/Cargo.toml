@@ -1,5 +1,5 @@
 [package]
-name = "vw-password-strength"
+name    = "vw-password-strength"
 version = "0.1.0"
 edition = "2024"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -10,13 +10,13 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wit-bindgen = "=0.63.0"
-zxcvbn = { version = "=3.1.1", default-features = false }
+zxcvbn      = { version = "=3.1.1", default-features = false }
 
 [profile.release]
-opt-level = "z"
-strip = true
-lto = true
-panic = "abort"
+opt-level     = "z"
+strip         = true
+lto           = true
+panic         = "abort"
 codegen-units = 1
 
 [patch.crates-io]
