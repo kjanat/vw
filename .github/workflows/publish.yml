@@ -13,6 +13,7 @@ env:
   TAG: ${{ github.event.release.tag_name }}
 jobs:
   validate:
+    if: github.event.release.author.login != 'beepboop-by-kjanat[bot]'
     name: Validate tested release assets
     runs-on: ubuntu-26.04
     timeout-minutes: 10
