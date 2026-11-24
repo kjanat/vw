@@ -1,6 +1,6 @@
 {
 	"name": "@kjanat/vaultwarden",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"description": "An independent TypeScript SDK for Vaultwarden.",
 	"keywords": [
 		"vaultwarden",
